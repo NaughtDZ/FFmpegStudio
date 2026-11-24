@@ -2,9 +2,28 @@
 
 线性图形化的 ffmpeg 前端。不写命令行，按「流 + 参数模块链」的方式拼出一条 ffmpeg 命令并执行。
 
-> **当前状态：早期开发版，界面与核心逻辑已跑通，功能尚未补齐，未公开发布。**
+> **v0.1.0 已发布** —— [下载便携包](https://github.com/NaughtDZ/FFmpegStudio/releases/tag/V0.1.0)（Windows x64，解压即用，无需安装 .NET、无需另装 ffmpeg）
+
+![主界面](docs/screenshot-main.png)
 
 ---
+
+
+## 界面
+
+双流参数链是主视图：左边任务队列，中间每条流一条链，右边参数模块库，底部实时命令行。
+
+**参数编辑**（点任意卡片，右侧切成编辑面板）：
+
+![参数编辑](docs/screenshot-edit.png)
+
+**兼容性求值**（把编码器换成流复制 copy，不兼容的模块直接从库里消失，链上标灰）：
+
+![copy 模式](docs/screenshot-copy.png)
+
+**轨道挑选**（多音轨素材可以填序号只保留其中几条）：
+
+![轨道选择](docs/screenshot-tracks.png)
 
 ## 它解决什么问题
 

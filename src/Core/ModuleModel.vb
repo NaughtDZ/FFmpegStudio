@@ -77,6 +77,8 @@ Public Class ModuleDefinition
     Public Property Bindings As New List(Of BindingDefinition)()
     ''' <summary>与这些模块互斥（同时存在时本模块变为已停用）。</summary>
     Public Property Conflicts As New List(Of String)()
+    ' 必须先有这些模块在场，本模块才有意义（如两遍编码需要目标码率）
+    Public Property Requires As New List(Of String)()
     ''' <summary>这些编码器下整个模块不可用（如 copy 模式）。</summary>
     Public Property ExcludeEncoders As New List(Of String)()
 

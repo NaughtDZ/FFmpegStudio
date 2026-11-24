@@ -157,6 +157,24 @@ Public Class ModuleEvaluator
             Return result
         End If
 
+        ' 2.5) 前置依赖：两遍编码需要目标码率，否则 x264 会报 CRF/CQP is incompatible with 2pass
+        For Each reqId In def.Requires
+            If Not ctx.IsPresent(reqId) Then
+                Dim need = ctx.Capabilities IsNot Nothing AndAlso String.IsNullOrEmpty(reqId)
+                Dim label = reqId
+                ' 把 id 换成人能看懂的名字
+                Select Case reqId
+                    Case "video.quality.bitrate" : label = "目标码率"
+                    Case "video.quality.crf" : label = "质量控制"
+                    Case "audio.bitrate" : label = "音频比特率"
+                End Select
+                result.State = ModuleState.Conditional
+                result.Reason = "需要先添加「" & label & "」模块"
+                result.Binding = hit
+                Return result
+            End If
+        Next
+
         ' 3) 与链上已有模块的冲突（按 scope 隔离：视频模块不与音频模块冲突）
         For Each cid In def.Conflicts
             If ctx.IsPresent(cid) Then
@@ -341,7 +359,8 @@ Public Class ModuleEvaluator
         If s Is Nothing Then Return """"""
         ' 以 - 开头的是 flag，永远不加引号（-c:v 里含冒号，否则会被包起来）
         If s.StartsWith("-") AndAlso s.Length > 1 Then Return s
-        If s.Contains(" ") OrElse s.Contains(":") OrElse s.Contains("=") OrElse s.Contains("""") Then
+        ' 只有空格和逗号会让命令行解析出错；冒号、等号在 shell 里是普通字符
+        If s.Contains(" ") OrElse s.Contains(",") OrElse s.Contains("""") Then
             Return """" & s & """"
         End If
         Return s

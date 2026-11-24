@@ -853,6 +853,15 @@ Public Class MainViewModel
         _cts?.Cancel()
     End Sub
 
+
+    Private Shared Function IsTwoPass(ctx As EvalContext) As Boolean
+        Dim inst = ctx.Instances.FirstOrDefault(
+            Function(i) String.Equals(i.Definition.Id, "video.twopass", StringComparison.OrdinalIgnoreCase))
+        If inst Is Nothing Then Return False
+        Dim v As String = Nothing
+        Return inst.Values.TryGetValue("on", v) AndAlso String.Equals(v, "on", StringComparison.OrdinalIgnoreCase)
+    End Function
+
     Private Async Function RunOneAsync(job As JobVm, ct As CancellationToken) As Task
         ' 状态切换必须回到 UI 线程
         Await Application.Current.Dispatcher.InvokeAsync(Sub()
@@ -886,7 +895,55 @@ Public Class MainViewModel
             End Sub)
 
         Dim runner As New FfmpegRunner()
-        Dim res = Await runner.RunAsync(FfmpegLocator.Ffmpeg, args, If(job.Media?.DurationMs, 0L), prog, ct)
+        Dim durationMs = If(job.Media?.DurationMs, 0L)
+
+        ' 两遍编码：第一遍只做分析（输出到 NUL），第二遍才是正式编码。
+        ' 每个任务必须用独立的 passlogfile，否则并行跑的时候会互相覆盖统计文件。
+        Dim twoPassLog As String = Nothing
+        If IsTwoPass(ctx) Then
+            Dim logFile = IO.Path.Combine(IO.Path.GetTempPath(), "ffmpegstudio-2pass-" & Guid.NewGuid().ToString("N"))
+            twoPassLog = logFile
+            ' 必须插在 -i 之后：-passlogfile 是输出选项，塞进输入段会让 ffmpeg 报
+            ' "Error parsing options for input file"。选项相对 -i 的位置是有语义的，
+            ' 只是同类输出选项之间才无序。
+            Dim iPos = args.IndexOf("-i")
+            If iPos >= 0 Then
+                args.Insert(iPos + 2, "-passlogfile")
+                args.Insert(iPos + 3, logFile)
+            Else
+                args.Add("-passlogfile")
+                args.Add(logFile)
+            End If
+
+            Dim args1 As New List(Of String)(args)
+            args1.RemoveAt(args1.Count - 1)                       ' 去掉输出路径
+            args1.AddRange({"-pass", "1", "-an", "-f", "null", "NUL"})
+
+            Await Application.Current.Dispatcher.InvokeAsync(Sub() job.Message = "第一遍分析中…")
+            Dim pass1 = Await runner.RunAsync(FfmpegLocator.Ffmpeg, args1, durationMs, Nothing, ct)
+
+            If Not pass1.Success Then
+                Await Application.Current.Dispatcher.InvokeAsync(Sub()
+                                                                     job.Status = If(pass1.Canceled, JobStatus.Canceled, JobStatus.Failed)
+                                                                     job.Message = If(pass1.Canceled, "已取消", "第一遍分析失败：" & pass1.ErrorText)
+                                                                 End Sub)
+                Return
+            End If
+
+            Await Application.Current.Dispatcher.InvokeAsync(Sub() job.Message = "第二遍编码中…")
+        End If
+
+        Dim res = Await runner.RunAsync(FfmpegLocator.Ffmpeg, args, durationMs, prog, ct)
+
+        ' 清理两遍编码的统计文件，别在临时目录里攒垃圾
+        If twoPassLog IsNot Nothing Then
+            For Each suffix In New String() {"-0.log", "-0.log.mbtree", "-0.log.mbtree.temp"}
+                Try
+                    If IO.File.Exists(twoPassLog & suffix) Then IO.File.Delete(twoPassLog & suffix)
+                Catch
+                End Try
+            Next
+        End If
 
         Await Application.Current.Dispatcher.InvokeAsync(Sub()
                                          If res.Canceled Then
@@ -1063,5 +1120,40 @@ Public Class MainViewModel
         RecalculateOutputs()
         Rebuild()
     End Sub
+
+
+    ' ================= 硬件编码器运行时探测 =================
+
+    Private _hardwareChecked As Boolean
+
+    Public ReadOnly Property HardwareChecked As Boolean
+        Get
+            Return _hardwareChecked
+        End Get
+    End Property
+
+    ' 启动后在后台探测 NVENC/QSV/AMF 是否真的能用。
+    ' 构建期能力表只能证明「编译进去了」，证明不了「这台机器有得用」。
+    Public Async Function DetectHardwareAsync() As Task
+        If _hardwareChecked OrElse Capabilities Is Nothing Then Return
+
+        Dim caps = Capabilities
+        Dim usable = Await Task.Run(Function() HardwareProbe.Detect(caps, 6000))
+
+        For Each name In HardwareProbe.Candidates
+            If Capabilities.FindEncoder(name) Is Nothing Then Continue For
+            If usable.Contains(name) Then Continue For
+
+            ' 不可用：从下拉里摘掉；若当前正选着它，退回软件编码
+            If EncoderChoices.Contains(name) Then EncoderChoices.Remove(name)
+            If String.Equals(VideoEncoder, name, StringComparison.OrdinalIgnoreCase) Then
+                VideoEncoder = If(EncoderChoices.Contains("libx264"), "libx264", EncoderChoices.FirstOrDefault())
+            End If
+        Next
+
+        _hardwareChecked = True
+        [Raise](NameOf(HardwareChecked))
+        Rebuild()
+    End Function
 
 End Class

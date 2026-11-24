@@ -1680,6 +1680,123 @@
           }
         }
       ]
+    },
+    {
+      "id": "container.tracks",
+      "scope": "container",
+      "category": "输出",
+      "title": "轨道选择",
+      "subtitle": "-map · 保留哪些流",
+      "icon": "layers",
+      "level": "advanced",
+      "doc": "默认只保留第一条视频和第一条音频。多语言视频、带字幕的素材可以选「全部音轨」，把每一条都留下来。",
+      "controls": [
+        {
+          "key": "mode",
+          "type": "enum",
+          "label": "保留",
+          "default": "auto",
+          "options": [
+            {
+              "value": "auto",
+              "label": "自动 · 各取第一条"
+            },
+            {
+              "value": "allaudio",
+              "label": "全部音轨"
+            },
+            {
+              "value": "all",
+              "label": "全部流（含字幕）"
+            }
+          ]
+        }
+      ],
+      "summary": "{mode}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "allaudio"
+          },
+          "emit": [
+            "-map",
+            "0:v:0?",
+            "-map",
+            "0:a"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "all"
+          },
+          "emit": [
+            "-map",
+            "0"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.twopass",
+      "scope": "video",
+      "category": "画质",
+      "title": "两遍编码",
+      "subtitle": "先分析再编码 · 码率更准",
+      "icon": "gauge",
+      "level": "advanced",
+      "doc": "先完整分析一遍素材，再正式编码。同样的目标码率下画质分配更均匀，代价是耗时约两倍。必须搭配「目标码率」模块——x264 在 CRF 模式下会直接报 CRF/CQP is incompatible with 2pass。",
+      "controls": [
+        {
+          "key": "on",
+          "type": "enum",
+          "label": "状态",
+          "default": "off",
+          "options": [
+            {
+              "value": "off",
+              "label": "关闭"
+            },
+            {
+              "value": "on",
+              "label": "开启"
+            }
+          ]
+        }
+      ],
+      "summary": "{on}",
+      "conflicts": [
+        "video.quality.crf"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "libx264",
+              "libx265"
+            ]
+          },
+          "runIf": {
+            "on": "on"
+          },
+          "emit": [
+            "-pass",
+            "2"
+          ]
+        }
+      ],
+      "requires": [
+        "video.quality.bitrate"
+      ]
     }
   ]
 }

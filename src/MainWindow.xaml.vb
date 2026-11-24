@@ -14,6 +14,26 @@ Class MainWindow
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         Dim argv = Environment.GetCommandLineArgs()
 
+        ' --hwcheck <file>：同步跑一遍硬件探测并写报告，然后退出（自动化验证用）
+        Dim hwIdx = Array.IndexOf(argv, "--hwcheck")
+        If hwIdx >= 0 AndAlso hwIdx + 1 < argv.Length Then
+            Dim caps = Capabilities.LoadEmbedded()
+            Dim usable = HardwareProbe.Detect(caps, 6000)
+            Dim lines As New List(Of String)
+            For Each encName In HardwareProbe.Candidates
+                If caps.FindEncoder(encName) Is Nothing Then
+                    lines.Add($"{encName}: 未编译进 ffmpeg")
+                ElseIf usable.Contains(encName) Then
+                    lines.Add($"{encName}: 可用")
+                Else
+                    lines.Add($"{encName}: 不可用")
+                End If
+            Next
+            File.WriteAllLines(argv(hwIdx + 1), lines, System.Text.Encoding.UTF8)
+            Application.Current.Shutdown(0)
+            Return
+        End If
+
         Dim evalIdx = Array.IndexOf(argv, "--eval")
         If evalIdx >= 0 Then
             RunEval(argv, evalIdx)
@@ -60,25 +80,6 @@ Class MainWindow
                 If card IsNot Nothing Then _vm.SelectedCard = card
             End If
 
-            ' --set <moduleId> <key> <value>：可重复。用循环而不是 IndexOf，否则只会处理第一个
-            Dim si = 0
-            Dim anySet = False
-            While si < argv.Length
-                If argv(si) = "--set" AndAlso si + 3 < argv.Length Then
-                    Dim mid = argv(si + 1) : Dim key = argv(si + 2) : Dim val = argv(si + 3)
-                    Dim target = _vm.VideoInstances.Concat(_vm.AudioInstances).FirstOrDefault(
-                        Function(x) String.Equals(x.Definition.Id, mid, StringComparison.OrdinalIgnoreCase))
-                    If target IsNot Nothing Then
-                        target.Values(key) = val
-                        anySet = True
-                    End If
-                    si += 4
-                Else
-                    si += 1
-                End If
-            End While
-            If anySet Then _vm.Rebuild()
-
             ' --mode av|video|audio：切换媒体模式，用于验证三种输出形态
             Dim modeIdx = Array.IndexOf(argv, "--mode")
             If modeIdx >= 0 AndAlso modeIdx + 1 < argv.Length Then
@@ -97,6 +98,66 @@ Class MainWindow
             If addIdx >= 0 AndAlso addIdx + 1 < argv.Length Then
                 _vm.AddFiles(argv(addIdx + 1).Split(";"c))
             End If
+
+            ' 硬件编码器探测：后台跑，不挡界面。探测期间下拉框里先照常显示。
+            Dim needHwProbe = Array.IndexOf(argv, "--no-hwprobe") < 0
+            If needHwProbe Then
+                Dim _probe = _vm.DetectHardwareAsync()
+            End If
+
+            ' --add-module <id>：把模块加进链但不选中（可重复）
+            Dim ai = 0
+            While ai < argv.Length
+                If argv(ai) = "--add-module" AndAlso ai + 1 < argv.Length Then
+                    Dim adef = _vm.Library.Find(argv(ai + 1))
+                    If adef IsNot Nothing Then _vm.AddToChain(adef)
+                    ai += 2
+                Else
+                    ai += 1
+                End If
+            End While
+
+            ' --remove <id>：从链上移除模块（可重复），测试互斥组合时用
+            Dim ri = 0
+            Dim anyRemove = False
+            While ri < argv.Length
+                If argv(ri) = "--remove" AndAlso ri + 1 < argv.Length Then
+                    Dim rid = argv(ri + 1)
+                    Dim target = _vm.VideoInstances.Concat(_vm.AudioInstances).FirstOrDefault(
+                        Function(x) String.Equals(x.Definition.Id, rid, StringComparison.OrdinalIgnoreCase))
+                    If target IsNot Nothing Then
+                        If String.Equals(target.Definition.Scope, "audio", StringComparison.OrdinalIgnoreCase) Then
+                            _vm.AudioInstances.Remove(target)
+                        Else
+                            _vm.VideoInstances.Remove(target)
+                        End If
+                        anyRemove = True
+                    End If
+                    ri += 2
+                Else
+                    ri += 1
+                End If
+            End While
+            If anyRemove Then _vm.Rebuild()
+
+            ' --set <moduleId> <key> <value>：可重复。用循环而不是 IndexOf，否则只会处理第一个
+            Dim si = 0
+            Dim anySet = False
+            While si < argv.Length
+                If argv(si) = "--set" AndAlso si + 3 < argv.Length Then
+                    Dim mid = argv(si + 1) : Dim key = argv(si + 2) : Dim val = argv(si + 3)
+                    Dim target = _vm.VideoInstances.Concat(_vm.AudioInstances).FirstOrDefault(
+                        Function(x) String.Equals(x.Definition.Id, mid, StringComparison.OrdinalIgnoreCase))
+                    If target IsNot Nothing Then
+                        target.Values(key) = val
+                        anySet = True
+                    End If
+                    si += 4
+                Else
+                    si += 1
+                End If
+            End While
+            If anySet Then _vm.Rebuild()
 
             ' 输出目录 / 方案读写（自动化测试用）
             Dim outDirIdx = Array.IndexOf(argv, "--outdir")

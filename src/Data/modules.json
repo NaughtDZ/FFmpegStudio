@@ -315,7 +315,8 @@
             "scale={width}:{height}:flags={flags}"
           ]
         }
-      ]
+      ],
+      "order": 40
     },
     {
       "id": "video.fps",
@@ -573,7 +574,8 @@
             "loudnorm=I={lufs}:TP=-1.5:LRA=11"
           ]
         }
-      ]
+      ],
+      "order": 35
     },
     {
       "id": "video.crop",
@@ -634,7 +636,8 @@
             "crop={w}:{h}:{x}:{y}"
           ]
         }
-      ]
+      ],
+      "order": 30
     },
     {
       "id": "video.rotate",
@@ -761,7 +764,8 @@
             "vflip"
           ]
         }
-      ]
+      ],
+      "order": 20
     },
     {
       "id": "video.pad",
@@ -826,7 +830,8 @@
             "pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:color={color}"
           ]
         }
-      ]
+      ],
+      "order": 50
     },
     {
       "id": "video.sharpen",
@@ -879,7 +884,8 @@
             "unsharp=5:5:{amount}:5:5:0"
           ]
         }
-      ]
+      ],
+      "order": 60
     },
     {
       "id": "video.denoise",
@@ -957,7 +963,8 @@
             "hqdn3d=6:6:12:12"
           ]
         }
-      ]
+      ],
+      "order": 15
     },
     {
       "id": "video.deinterlace",
@@ -1002,7 +1009,8 @@
             "yadif=mode={mode}"
           ]
         }
-      ]
+      ],
+      "order": 10
     },
     {
       "id": "video.trim",
@@ -1405,7 +1413,8 @@
             "volume={gain}dB"
           ]
         }
-      ]
+      ],
+      "order": 30
     },
     {
       "id": "audio.fade",
@@ -1437,7 +1446,8 @@
             "afade=t=in:st=0:d={fin}"
           ]
         }
-      ]
+      ],
+      "order": 40
     },
     {
       "id": "audio.fadeout",
@@ -1469,7 +1479,8 @@
             "areverse,afade=t=in:st=0:d={fout},areverse"
           ]
         }
-      ]
+      ],
+      "order": 45
     },
     {
       "id": "audio.denoise",
@@ -1515,7 +1526,8 @@
             "afftdn=nr={nr}"
           ]
         }
-      ]
+      ],
+      "order": 10
     },
     {
       "id": "audio.compressor",
@@ -1561,7 +1573,8 @@
             "acompressor=threshold={th}:ratio=3:attack=5:release=100"
           ]
         }
-      ]
+      ],
+      "order": 20
     },
     {
       "id": "audio.quality",

@@ -147,6 +147,32 @@
             </Setter>
         </Style>
 
+
+        <!-- ===== 卡片上的迷你操作按钮（替代拖拽） ===== -->
+        <Style x:Key="MiniBtn" TargetType="Button">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Margin" Value="2,0,0,0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#4D5A70"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="Transparent" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#233045"/>
+                                <Setter Property="Foreground" Value="#8FB6FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- ===== 链上卡片 ===== -->
         <DataTemplate x:Key="CardTemplate" DataType="{x:Type local:ModuleCardVm}">
             <Border x:Name="Card" MinHeight="52" Margin="0,0,0,6" CornerRadius="10" BorderThickness="1"
@@ -165,6 +191,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
@@ -187,6 +214,13 @@
                             <Border Style="{StaticResource ValuePill}">
                                 <TextBlock Text="{Binding Summary}" FontFamily="Consolas" FontSize="11.5" Foreground="#CFD9EA"/>
                             </Border>
+
+                            <Button Grid.Column="3" Content="&#x2191;" Tag="{Binding}" Click="MoveUp_Click"
+                                    Style="{StaticResource MiniBtn}" ToolTip="上移"/>
+                            <Button Grid.Column="3" Content="&#x2193;" Tag="{Binding}" Click="MoveDown_Click"
+                                    Style="{StaticResource MiniBtn}" ToolTip="下移"/>
+                            <Button Grid.Column="3" Content="&#x2715;" Tag="{Binding}" Click="RemoveCard_Click"
+                                    Style="{StaticResource MiniBtn}" ToolTip="移除"/>
                         </StackPanel>
                     </Grid>
                 </Grid>

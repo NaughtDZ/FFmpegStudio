@@ -183,6 +183,26 @@ Class MainWindow
 
     ''' <summary>点击任务 → 整个界面跟随该任务的媒体模式。</summary>
 
+
+    ' ---------- 卡片按钮：替代拖拽 ----------
+
+    Private Shared Function CardOf(sender As Object) As ModuleCardVm
+        Dim fe = TryCast(sender, FrameworkElement)
+        Return TryCast(fe?.DataContext, ModuleCardVm)
+    End Function
+
+    Private Sub MoveUp_Click(sender As Object, e As RoutedEventArgs)
+        If _vm IsNot Nothing Then _vm.MoveModule(CardOf(sender), -1)
+    End Sub
+
+    Private Sub MoveDown_Click(sender As Object, e As RoutedEventArgs)
+        If _vm IsNot Nothing Then _vm.MoveModule(CardOf(sender), 1)
+    End Sub
+
+    Private Sub RemoveCard_Click(sender As Object, e As RoutedEventArgs)
+        If _vm IsNot Nothing Then _vm.RemoveModule(CardOf(sender))
+    End Sub
+
     ' ---------- 输出目录 ----------
 
     Private Sub PickOutputDir_Click(sender As Object, e As RoutedEventArgs)

@@ -693,10 +693,51 @@ Public Class MainViewModel
     End Sub
 
     Public Sub AddToChain(def As ModuleDefinition)
-        Dim target = If(String.Equals(def.Scope, "audio", StringComparison.OrdinalIgnoreCase),
-                        AudioInstances, VideoInstances)
+        Dim target = InstancesFor(def.Scope)
         If target.Any(Function(i) i.Definition Is def) Then Return
-        target.Add(def.CreateInstance())
+
+        Dim inst = def.CreateInstance()
+
+        ' 滤镜按推荐位置插入：加一个降噪会自动排到缩放前面，用户完全不用管。
+        ' 这不是强制——之后随时可以点 ↑↓ 改。
+        If def.IsFilter AndAlso def.Order > 0 Then
+            Dim idx = target.FindIndex(Function(x) x.Definition.IsFilter AndAlso
+                                               x.Definition.Order > def.Order)
+            If idx >= 0 Then
+                target.Insert(idx, inst)
+                Rebuild()
+                Return
+            End If
+        End If
+
+        target.Add(inst)
+        Rebuild()
+    End Sub
+
+    Private Function InstancesFor(scope As String) As List(Of ModuleInstance)
+        If String.Equals(scope, "audio", StringComparison.OrdinalIgnoreCase) Then Return AudioInstances
+        Return VideoInstances
+    End Function
+
+    ''' <summary>上移 / 下移一个模块。用按钮而不是拖拽：离散、可逆、没有坐标计算。</summary>
+    Public Sub MoveModule(card As ModuleCardVm, delta As Integer)
+        If card Is Nothing Then Return
+        Dim list = InstancesFor(card.Instance.Definition.Scope)
+        Dim idx = list.IndexOf(card.Instance)
+        If idx < 0 Then Return
+
+        Dim newIdx = idx + delta
+        If newIdx < 0 OrElse newIdx >= list.Count Then Return
+
+        list.RemoveAt(idx)
+        list.Insert(newIdx, card.Instance)
+        Rebuild()
+    End Sub
+
+    Public Sub RemoveModule(card As ModuleCardVm)
+        If card Is Nothing Then Return
+        InstancesFor(card.Instance.Definition.Scope).Remove(card.Instance)
+        If SelectedCard Is card Then SelectedCard = Nothing
         Rebuild()
     End Sub
 

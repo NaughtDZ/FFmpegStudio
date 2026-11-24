@@ -69,6 +69,10 @@ Public Class ModuleDefinition
     ''' <summary>卡片上显示的摘要模板，例如 "CRF {crf}"。</summary>
     Public Property Summary As String = ""
 
+    ' <summary>滤镜链里的推荐位置（小=靠前）。0 表示不参与滤镜排序。
+    ' 注意：这与编码器无关——滤镜在编码之前执行，换编码器不影响滤镜顺序。</summary>
+    Public Property Order As Integer
+
     Public Property Controls As New List(Of ControlDefinition)()
     Public Property Bindings As New List(Of BindingDefinition)()
     ''' <summary>与这些模块互斥（同时存在时本模块变为已停用）。</summary>

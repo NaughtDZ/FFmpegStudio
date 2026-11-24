@@ -149,7 +149,15 @@ Class MainWindow
                     Dim target = _vm.VideoInstances.Concat(_vm.AudioInstances).FirstOrDefault(
                         Function(x) String.Equals(x.Definition.Id, mid, StringComparison.OrdinalIgnoreCase))
                     If target IsNot Nothing Then
-                        target.Values(key) = val
+                        ' 和界面走同一套校验：越界夹取、int 取整、非数字拒绝
+                        Dim ctrl = target.Definition.Controls.FirstOrDefault(
+                            Function(x) String.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase))
+                        If ctrl IsNot Nothing Then
+                            Dim normalized = ControlVm.TryNormalizeNumber(ctrl, val)
+                            If normalized IsNot Nothing Then target.Values(key) = normalized
+                        Else
+                            target.Values(key) = val
+                        End If
                         anySet = True
                     End If
                     si += 4
@@ -244,6 +252,15 @@ Class MainWindow
 
     ''' <summary>点击任务 → 整个界面跟随该任务的媒体模式。</summary>
 
+
+
+    ''' <summary>数字输入框失焦：非法或越界时把修正后的值刷回界面。</summary>
+    Private Sub NumericBox_LostFocus(sender As Object, e As RoutedEventArgs)
+        Dim tb = TryCast(sender, TextBox)
+        If tb Is Nothing Then Return
+        Dim be = tb.GetBindingExpression(TextBox.TextProperty)
+        be?.UpdateTarget()
+    End Sub
 
     ' ---------- 卡片按钮：替代拖拽 ----------
 

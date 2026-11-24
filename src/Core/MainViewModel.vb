@@ -207,11 +207,21 @@ Public Class ControlVm
             Return ""
         End Get
         Set(newValue As String)
+            Dim v = If(newValue, "")
+
+            ' 数值控件允许手动输入，所以这里必须校验：非数字忽略，越界夹取，int 取整。
+            ' 校验不通过时源不变，界面会在 LostFocus 时被强制刷回合法值。
+            If IsNumeric Then
+                Dim normalized = TryNormalizeNumber(Def, v)
+                If normalized Is Nothing Then Return
+                v = normalized
+            End If
+
             Dim old As String = Nothing
             Instance.Values.TryGetValue(Def.Key, old)
-            If old = newValue Then Return
+            If old = v Then Return
 
-            Instance.Values(Def.Key) = newValue
+            Instance.Values(Def.Key) = v
             [Raise](NameOf(Value))
             [Raise](NameOf(DoubleValue))
             _onChanged?.Invoke()
@@ -232,6 +242,28 @@ Public Class ControlVm
             Value = text
         End Set
     End Property
+
+    ' 输入框的 tooltip：告诉用户合法区间
+    Public ReadOnly Property RangeHint As String
+        Get
+            If Not IsNumeric Then Return ""
+            Return $"{Minimum:0.##} - {Maximum:0.##}"
+        End Get
+    End Property
+
+    ' 数值校验：非数字返回 Nothing（拒绝），越界夹取，int 取整。
+    Public Shared Function TryNormalizeNumber(def As ControlDefinition, raw As String) As String
+        If def Is Nothing OrElse raw Is Nothing Then Return Nothing
+        Dim isInt = String.Equals(def.ParamType, "int", StringComparison.OrdinalIgnoreCase)
+        Dim isFloat = String.Equals(def.ParamType, "float", StringComparison.OrdinalIgnoreCase)
+        If Not isInt AndAlso Not isFloat Then Return raw
+
+        Dim d As Double
+        If Not Double.TryParse(raw.Trim(), d) Then Return Nothing
+        If def.Min.HasValue Then d = Math.Max(def.Min.Value, d)
+        If def.Max.HasValue Then d = Math.Min(def.Max.Value, d)
+        Return If(isInt, CInt(Math.Round(d)).ToString(), d.ToString("0.##"))
+    End Function
 
     Public ReadOnly Property IsNumeric As Boolean
         Get

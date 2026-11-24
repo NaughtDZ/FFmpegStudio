@@ -379,8 +379,21 @@
         <DataTemplate x:Key="ControlTemplate" DataType="{x:Type local:ControlVm}">
             <StackPanel Margin="0,0,0,14">
                 <DockPanel Margin="0,0,0,6">
-                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="#93A1B8"/>
-                    <TextBlock Text="{Binding Value}" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="#93A1B8"
+                               VerticalAlignment="Center"/>
+
+                    <!-- 数值：可手动输入。滑块拖不准大范围的值，必须能直接敲。 -->
+                    <TextBox x:Name="NumInput" DockPanel.Dock="Right" Width="72" Height="23"
+                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                             LostFocus="NumericBox_LostFocus"
+                             Background="#0D1219" BorderBrush="#28303F" BorderThickness="1"
+                             Foreground="#8FD8FF" FontFamily="Consolas" FontSize="11.5"
+                             Padding="6,1" HorizontalContentAlignment="Right"
+                             CaretBrush="#8FD8FF" ToolTip="{Binding RangeHint}"/>
+
+                    <!-- 非数值：只读显示 -->
+                    <TextBlock x:Name="ValueText" Text="{Binding Value}" HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
                                FontFamily="Consolas" FontSize="11.5" Foreground="#8FD8FF"/>
                 </DockPanel>
 
@@ -423,6 +436,12 @@
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsNumeric}" Value="True">
                     <Setter TargetName="NumSlider" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="NumInput" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="ValueText" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsNumeric}" Value="False">
+                    <Setter TargetName="NumInput" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="ValueText" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding ParamType}" Value="enum">
                     <Setter TargetName="EnumCombo" Property="Visibility" Value="Visible"/>

@@ -125,7 +125,14 @@ Public Class PresetOption
 End Class
 
 
-''' <summary>一条「条件 → flag 序列」的绑定规则。</summary>
+''
+' 把「一个值」展开成「多组 token」：音轨挑选填 "0,2" 就生成 -map 0:a:0 -map 0:a:2
+Public Class RepeatEmit
+    Public Property Key As String = ""
+    Public Property Tokens As New List(Of String)()
+End Class
+
+' <summary>一条「条件 → flag 序列」的绑定规则。</summary>
 Public Class BindingDefinition
 
     <JsonPropertyName("when")>
@@ -133,6 +140,9 @@ Public Class BindingDefinition
 
     ''' <summary>要输出的 flag 序列，值用 {key} 占位。</summary>
     Public Property Emit As New List(Of String)()
+
+    ' 按分隔符展开的 token 组（{item} 为占位）
+    Public Property EmitRepeat As RepeatEmit
 
     ''' <summary>逻辑值 → 实际 flag 值 的映射，用于同一概念在不同编码器上取值不同（如 preset 的 p1..p7）。</summary>
     Public Property ValueMap As Dictionary(Of String, String)

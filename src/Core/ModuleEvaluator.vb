@@ -217,6 +217,18 @@ Public Class ModuleEvaluator
             result.Tokens.Add(Resolve(tpl, inst, hit))
         Next
 
+        ' 展开式 token：把 "0,2" 变成 -map 0:a:0 -map 0:a:2
+        If hit.EmitRepeat IsNot Nothing AndAlso Not String.IsNullOrEmpty(hit.EmitRepeat.Key) Then
+            Dim raw As String = Nothing
+            If inst.Values.TryGetValue(hit.EmitRepeat.Key, raw) Then
+                For Each item In raw.Split(","c).Select(Function(x) x.Trim()).Where(Function(x) x.Length > 0)
+                    For Each tpl In hit.EmitRepeat.Tokens
+                        result.Tokens.Add(Resolve(tpl.Replace("{item}", item), inst, hit))
+                    Next
+                Next
+            End If
+        End If
+
         result.State = ModuleState.Available
         Return result
     End Function

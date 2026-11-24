@@ -1689,7 +1689,7 @@
       "subtitle": "-map · 保留哪些流",
       "icon": "layers",
       "level": "advanced",
-      "doc": "默认只保留第一条视频和第一条音频。多语言视频、带字幕的素材可以选「全部音轨」，把每一条都留下来。",
+      "doc": "默认只保留第一条视频和第一条音频。多语言视频、带字幕的素材可以选「全部音轨」，也可以选「指定音轨」后填序号（从 0 开始，逗号分隔，如 0,2）只挑其中几条。",
       "controls": [
         {
           "key": "mode",
@@ -1706,10 +1706,20 @@
               "label": "全部音轨"
             },
             {
+              "value": "pick",
+              "label": "指定音轨（填序号）"
+            },
+            {
               "value": "all",
               "label": "全部流（含字幕）"
             }
           ]
+        },
+        {
+          "key": "picks",
+          "type": "string",
+          "label": "音轨序号",
+          "default": "0"
         }
       ],
       "summary": "{mode}",
@@ -1743,6 +1753,27 @@
             "-map",
             "0"
           ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "pick"
+          },
+          "emit": [
+            "-map",
+            "0:v:0?"
+          ],
+          "emitRepeat": {
+            "key": "picks",
+            "tokens": [
+              "-map",
+              "0:a:{item}"
+            ]
+          }
         }
       ]
     },
@@ -1796,6 +1827,455 @@
       ],
       "requires": [
         "video.quality.bitrate"
+      ]
+    },
+    {
+      "id": "video.eq",
+      "scope": "video",
+      "category": "画面",
+      "title": "色彩调整",
+      "subtitle": "eq 滤镜 · 亮度/对比度/饱和度",
+      "icon": "palette",
+      "kind": "filter",
+      "level": "basic",
+      "order": 18,
+      "doc": "整体调整画面的明暗与色彩浓度。饱和度拉太高会溢出成色块，对比度太高会丢失暗部细节。",
+      "controls": [
+        {
+          "key": "brightness",
+          "type": "enum",
+          "label": "亮度",
+          "default": "0",
+          "options": [
+            {
+              "value": "-0.1",
+              "label": "-0.1 变暗"
+            },
+            {
+              "value": "0",
+              "label": "0 不变"
+            },
+            {
+              "value": "0.05",
+              "label": "+0.05 略亮"
+            },
+            {
+              "value": "0.1",
+              "label": "+0.1 明显变亮"
+            }
+          ]
+        },
+        {
+          "key": "contrast",
+          "type": "enum",
+          "label": "对比度",
+          "default": "1",
+          "options": [
+            {
+              "value": "0.9",
+              "label": "0.9 柔和"
+            },
+            {
+              "value": "1",
+              "label": "1 不变"
+            },
+            {
+              "value": "1.2",
+              "label": "1.2 增强"
+            },
+            {
+              "value": "1.5",
+              "label": "1.5 强对比"
+            }
+          ]
+        },
+        {
+          "key": "saturation",
+          "type": "enum",
+          "label": "饱和度",
+          "default": "1",
+          "options": [
+            {
+              "value": "0",
+              "label": "0 黑白"
+            },
+            {
+              "value": "0.8",
+              "label": "0.8 褪色"
+            },
+            {
+              "value": "1",
+              "label": "1 不变"
+            },
+            {
+              "value": "1.3",
+              "label": "1.3 鲜艳"
+            }
+          ]
+        }
+      ],
+      "summary": "{brightness}/{contrast}/{saturation}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "eq=brightness={brightness}:contrast={contrast}:saturation={saturation}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.deblock",
+      "scope": "video",
+      "category": "画面",
+      "title": "去方块",
+      "subtitle": "deblock · 消除低码率块状伪影",
+      "icon": "sparkle",
+      "kind": "filter",
+      "level": "advanced",
+      "order": 16,
+      "doc": "码率不够时画面会出现 8×8 的方块（尤其暗部和渐变区域）。deblock 能柔化这些边界，代价是细节变糊。适合修复老素材。",
+      "controls": [
+        {
+          "key": "strength",
+          "type": "enum",
+          "label": "强度",
+          "default": "strong",
+          "options": [
+            {
+              "value": "weak",
+              "label": "弱"
+            },
+            {
+              "value": "strong",
+              "label": "强 · 块多时用"
+            }
+          ]
+        }
+      ],
+      "summary": "{strength}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "deblock=filter={strength}:block=8"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.highpass",
+      "scope": "audio",
+      "category": "音频",
+      "title": "高通滤波",
+      "subtitle": "highpass · 切掉低频嗡声",
+      "icon": "tune",
+      "kind": "filter",
+      "level": "advanced",
+      "order": 8,
+      "doc": "切掉低于截止频率的声音。空调嗡声、桌面震动、手持噪声大多在 100 Hz 以下，切掉后语音会干净很多。人声男低音基频约 85 Hz，别切太高。",
+      "controls": [
+        {
+          "key": "freq",
+          "type": "enum",
+          "label": "截止频率",
+          "default": "80",
+          "options": [
+            {
+              "value": "60",
+              "label": "60 Hz · 保守"
+            },
+            {
+              "value": "80",
+              "label": "80 Hz · 语音推荐"
+            },
+            {
+              "value": "120",
+              "label": "120 Hz · 强力"
+            },
+            {
+              "value": "200",
+              "label": "200 Hz · 只留中高频"
+            }
+          ]
+        }
+      ],
+      "summary": "{freq} Hz",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "highpass=f={freq}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.lowpass",
+      "scope": "audio",
+      "category": "音频",
+      "title": "低通滤波",
+      "subtitle": "lowpass · 切掉高频嘶声",
+      "icon": "tune",
+      "kind": "filter",
+      "level": "advanced",
+      "order": 9,
+      "doc": "切掉高于截止频率的声音。磁带嘶声、电流噪声常在高频段，但切太低会让声音发闷。",
+      "controls": [
+        {
+          "key": "freq",
+          "type": "enum",
+          "label": "截止频率",
+          "default": "12000",
+          "options": [
+            {
+              "value": "8000",
+              "label": "8 kHz · 电话音质"
+            },
+            {
+              "value": "12000",
+              "label": "12 kHz · 去嘶声"
+            },
+            {
+              "value": "16000",
+              "label": "16 kHz · 保守"
+            },
+            {
+              "value": "18000",
+              "label": "18 kHz · 轻微"
+            }
+          ]
+        }
+      ],
+      "summary": "{freq} Hz",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "lowpass=f={freq}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.equalizer",
+      "scope": "audio",
+      "category": "音频",
+      "title": "单段均衡",
+      "subtitle": "equalizer · 某频段增减几个 dB",
+      "icon": "sliders",
+      "kind": "filter",
+      "level": "advanced",
+      "order": 25,
+      "doc": "在指定频率附近做增益调整。比如 3 kHz 提升 3 dB 能让人声更清晰，150 Hz 衰减能减少浑浊。",
+      "controls": [
+        {
+          "key": "freq",
+          "type": "enum",
+          "label": "中心频率",
+          "default": "3000",
+          "options": [
+            {
+              "value": "150",
+              "label": "150 Hz · 低频厚度"
+            },
+            {
+              "value": "500",
+              "label": "500 Hz · 中低"
+            },
+            {
+              "value": "3000",
+              "label": "3 kHz · 人声清晰度"
+            },
+            {
+              "value": "8000",
+              "label": "8 kHz · 空气感"
+            }
+          ]
+        },
+        {
+          "key": "gain",
+          "type": "enum",
+          "label": "增益",
+          "default": "3",
+          "options": [
+            {
+              "value": "-6",
+              "label": "-6 dB 衰减"
+            },
+            {
+              "value": "-3",
+              "label": "-3 dB"
+            },
+            {
+              "value": "3",
+              "label": "+3 dB"
+            },
+            {
+              "value": "6",
+              "label": "+6 dB"
+            }
+          ]
+        }
+      ],
+      "summary": "{freq}Hz {gain}dB",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "equalizer=f={freq}:t=q:w=1.5:g={gain}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.resample",
+      "scope": "audio",
+      "category": "音频",
+      "title": "重采样质量",
+      "subtitle": "aresample · 采样率转换精度",
+      "icon": "audio",
+      "kind": "filter",
+      "level": "advanced",
+      "order": 5,
+      "doc": "采样率转换时用的重采样器。swr 是 ffmpeg 自带的默认实现，速度快；soxr 质量更好但慢，适合音频为主的素材。只有在确实改了采样率时才明显。",
+      "controls": [
+        {
+          "key": "q",
+          "type": "enum",
+          "label": "质量",
+          "default": "swr",
+          "options": [
+            {
+              "value": "swr",
+              "label": "swr · 快速（默认）"
+            },
+            {
+              "value": "soxr",
+              "label": "soxr · 高精度"
+            },
+            {
+              "value": "soxr_max",
+              "label": "soxr 极高精度"
+            }
+          ]
+        }
+      ],
+      "summary": "{q}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "q": "swr"
+          },
+          "emit": [
+            "aresample=resampler=swr"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "q": "soxr"
+          },
+          "emit": [
+            "aresample=resampler=soxr"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "q": "soxr_max"
+          },
+          "emit": [
+            "aresample=resampler=soxr:precision=33"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "container.metadata",
+      "scope": "container",
+      "category": "输出",
+      "title": "元数据",
+      "subtitle": "标题 / 作者等标签",
+      "icon": "tag",
+      "level": "basic",
+      "doc": "写进文件的元信息。播放器、资源管理器、流媒体服务器会读这些字段。留空表示不写。",
+      "controls": [
+        {
+          "key": "title",
+          "type": "string",
+          "label": "标题",
+          "default": ""
+        },
+        {
+          "key": "artist",
+          "type": "string",
+          "label": "作者",
+          "default": ""
+        },
+        {
+          "key": "comment",
+          "type": "string",
+          "label": "注释",
+          "default": ""
+        }
+      ],
+      "summary": "{title}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-metadata",
+            "title={title}",
+            "-metadata",
+            "artist={artist}",
+            "-metadata",
+            "comment={comment}"
+          ]
+        }
       ]
     }
   ]

@@ -323,7 +323,13 @@ Public Class JobVm
             If Media Is Nothing Then Return ""
             Dim bits As New List(Of String)
             If Media.HasVideo Then bits.Add(Media.ResolutionText)
-            If Media.HasAudio Then bits.Add("音频")
+            If Media.HasAudio Then
+                If Media.AudioTracks IsNot Nothing AndAlso Media.AudioTracks.Count > 1 Then
+                    bits.Add($"{Media.AudioTracks.Count} 条音轨")
+                Else
+                    bits.Add("音频")
+                End If
+            End If
             If Media.DurationMs > 0 Then bits.Add(Media.DurationText)
             Return String.Join(" · ", bits)
         End Get

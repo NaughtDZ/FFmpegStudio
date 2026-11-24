@@ -16,6 +16,10 @@ Public Class MediaInfo
     Public Property VideoCodec As String = ""
     Public Property AudioCodec As String = ""
 
+    ' 逐条流的明细：用来支持「只保留第 1、3 条音轨」这种挑选
+    Public Property AudioTracks As New List(Of TrackInfo)()
+    Public Property VideoTracks As New List(Of TrackInfo)()
+
     Public ReadOnly Property DurationText As String
         Get
             Dim ts = TimeSpan.FromMilliseconds(DurationMs)
@@ -31,6 +35,27 @@ Public Class MediaInfo
     End Property
 End Class
 
+
+
+''' <summary>输入文件里的一条流。</summary>
+Public Class TrackInfo
+    Public Property Index As Integer
+    Public Property Codec As String = ""
+    Public Property Language As String = ""
+    Public Property Title As String = ""
+    Public Property Channels As Integer
+
+    Public ReadOnly Property Describe As String
+        Get
+            Dim bits As New List(Of String)
+            If Not String.IsNullOrEmpty(Codec) Then bits.Add(Codec)
+            If Channels > 0 Then bits.Add($"{Channels}ch")
+            If Not String.IsNullOrEmpty(Language) Then bits.Add(Language)
+            If Not String.IsNullOrEmpty(Title) Then bits.Add(Title)
+            Return String.Join(" · ", bits)
+        End Get
+    End Property
+End Class
 
 ''' <summary>
 ''' 输入文件探测。用 ffprobe 读真实流信息——这是「纯音频文件选了仅视频」能被提前拦住的前提。
@@ -77,9 +102,25 @@ Public Module MediaProbe
                             Dim ct As JsonElement
                             If Not st.TryGetProperty("codec_type", ct) Then Continue For
 
+                            Dim track As New TrackInfo()
+                            Dim idxEl As JsonElement
+                            If st.TryGetProperty("index", idxEl) Then track.Index = idxEl.GetInt32()
+                            Dim cnEl As JsonElement
+                            If st.TryGetProperty("codec_name", cnEl) Then track.Codec = cnEl.GetString()
+                            Dim langEl As JsonElement
+                            If st.TryGetProperty("tags", langEl) Then
+                                Dim lg As JsonElement
+                                If langEl.TryGetProperty("language", lg) Then track.Language = lg.GetString()
+                                Dim ti As JsonElement
+                                If langEl.TryGetProperty("title", ti) Then track.Title = ti.GetString()
+                            End If
+                            Dim chEl As JsonElement
+                            If st.TryGetProperty("channels", chEl) Then track.Channels = chEl.GetInt32()
+
                             Select Case ct.GetString()
                                 Case "video"
                                     info.HasVideo = True
+                                    info.VideoTracks.Add(track)
                                     Dim w, h As JsonElement
                                     If st.TryGetProperty("width", w) Then info.Width = w.GetInt32()
                                     If st.TryGetProperty("height", h) Then info.Height = h.GetInt32()
@@ -97,6 +138,7 @@ Public Module MediaProbe
                                     End If
                                 Case "audio"
                                     info.HasAudio = True
+                                    info.AudioTracks.Add(track)
                                     Dim cn As JsonElement
                                     If st.TryGetProperty("codec_name", cn) Then info.AudioCodec = cn.GetString()
                             End Select

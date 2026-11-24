@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>FFmpeg Studio — 主界面</title>
+<style>
+:root{
+  --bg:#0a0c10; --panel:#0e1117; --panel2:#121720; --panel3:#171d27; --panel4:#1c2330;
+  --line:#1d2431; --line2:#28303f; --line3:#333d4f;
+  --txt:#e8edf6; --txt2:#93a1b8; --txt3:#5d6b82;
+  --accent:#5b8cff; --video:#22d3ee; --audio:#b388ff;
+  --ok:#34d399; --warn:#fbbf24; --danger:#f87171;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1600px;overflow:hidden}
+body{
+  background:var(--bg); color:var(--txt); font-size:13px; line-height:1.45;
+  font-family:"Inter","Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.app{display:grid;grid-template-rows:54px auto 128px}
+
+/* ---------- top bar ---------- */
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:linear-gradient(180deg,#121721,#0d1016);
+  border-bottom:1px solid var(--line);
+}
+.logo{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#2f6bff,#6d3bff);color:#fff;
+  box-shadow:0 2px 10px rgba(70,110,255,.35);
+}
+.logo .ic{width:16px;height:16px;stroke-width:1.9}
+.brand-name{font-size:14px;font-weight:600;letter-spacing:.2px}
+.brand-sub{font-size:10.5px;color:var(--txt3);letter-spacing:.6px}
+.tb-sep{width:1px;height:26px;background:var(--line2);margin:0 2px}
+.tb-item{display:flex;align-items:center;gap:7px;color:var(--txt2);font-size:12px}
+.tb-item b{color:var(--txt);font-weight:600}
+.tb-item .ic{width:14px;height:14px;color:var(--txt3)}
+.spacer{flex:1}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;height:31px;padding:0 13px;
+  border-radius:8px;border:1px solid var(--line2);background:var(--panel3);
+  color:var(--txt);font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;
+}
+.btn .ic{width:14px;height:14px}
+.btn.ghost{background:transparent;color:var(--txt2)}
+.btn.primary{
+  background:linear-gradient(180deg,#3f74ff,#2f5ce0);border-color:#3f74ff;
+  box-shadow:0 2px 12px rgba(63,116,255,.35);color:#fff;
+}
+.btn .kbd{
+  font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.14);
+  font-family:"JetBrains Mono",monospace;margin-left:2px;
+}
+
+/* ---------- main ---------- */
+.main{display:grid;grid-template-columns:252px 1fr 318px}
+
+/* ---------- left files ---------- */
+.files{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.pane-head{
+  height:42px;display:flex;align-items:center;gap:8px;padding:0 14px;
+  font-size:11px;font-weight:600;letter-spacing:1.2px;color:var(--txt3);text-transform:uppercase;flex:none;
+}
+.pane-head .count{
+  margin-left:auto;font-size:10.5px;letter-spacing:0;padding:1px 7px;border-radius:99px;
+  background:var(--panel3);color:var(--txt2);font-weight:600;
+}
+.files-list{padding:0 10px;display:flex;flex-direction:column;gap:6px}
+.file{
+  display:flex;gap:9px;padding:9px 10px;border-radius:9px;border:1px solid transparent;
+  background:var(--panel2);cursor:pointer;position:relative;
+}
+.file.active{border-color:#2c4470;background:linear-gradient(180deg,#16202f,#121924)}
+.file.active::before{
+  content:"";position:absolute;left:-1px;top:9px;bottom:9px;width:2.5px;border-radius:2px;background:var(--accent);
+}
+.file-ic{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;flex:none;background:#1b2432;color:var(--video)}
+.file-ic.aud{color:var(--audio)}
+.file-ic .ic{width:14px;height:14px}
+.file-body{min-width:0;flex:1}
+.file-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)}
+.file-meta{font-size:10.5px;color:var(--txt3);margin-top:1px;white-space:nowrap;overflow:hidden}
+.file-state{
+  font-size:10px;padding:1px 6px;border-radius:99px;flex:none;align-self:flex-start;
+  background:#1c2534;color:var(--txt2);font-weight:500;margin-top:1px;
+}
+.file-state.done{background:rgba(52,211,153,.12);color:var(--ok)}
+.file-state.run{background:rgba(91,140,255,.14);color:#8db0ff}
+.drop{
+  height:96px;margin:4px 0 0;border:1px dashed var(--line3);border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--txt3);font-size:11.5px;text-align:center;gap:2px;
+}
+.drop .ic{width:22px;height:22px;margin-bottom:6px;color:#39445a}
+.files-foot{margin-top:auto;padding:10px 10px 12px;border-top:1px solid var(--line);flex:none}
+.side-block{padding:14px 12px 14px;margin-top:10px;border-top:1px solid var(--line)}
+.side-h{font-size:10px;font-weight:600;letter-spacing:1.1px;color:var(--txt3);text-transform:uppercase;margin-bottom:7px}
+.side-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--txt3);padding:3px 0}
+.side-row b{color:var(--txt2);font-weight:400;font-family:"JetBrains Mono",monospace;font-size:11px}
+.preset{
+  display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--txt2);
+  padding:6px 9px;border-radius:7px;background:var(--panel2);margin-bottom:4px;
+}
+.preset .pd{width:6px;height:6px;border-radius:2px;flex:none}
+.preset b{margin-left:auto;font-size:10px;font-weight:600;color:var(--txt3);font-family:"JetBrains Mono",monospace}
+.par{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:11.5px;color:var(--txt2);padding:7px 10px;border-radius:8px;background:var(--panel2);
+}
+.seg{display:flex;gap:3px;background:#0c1016;padding:2px;border-radius:6px}
+.seg span{font-size:10.5px;padding:2px 7px;border-radius:4px;color:var(--txt3);font-family:"JetBrains Mono",monospace}
+.seg span.on{background:var(--panel4);color:var(--txt)}
+
+/* ---------- workspace ---------- */
+.workspace{
+  display:flex;flex-direction:column;
+  background:radial-gradient(900px 400px at 50% -10%,rgba(91,140,255,.06),transparent 70%),var(--bg);
+}
+.ws-head{
+  height:48px;display:flex;align-items:center;gap:12px;padding:0 18px;
+  border-bottom:1px solid var(--line);flex:none;
+}
+.crumb{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.crumb .ic{width:14px;height:14px;color:var(--txt3)}
+.crumb b{font-weight:600}
+.crumb span{color:var(--txt3)}
+.tabs{display:flex;gap:2px;margin-left:10px;background:#0c1016;padding:3px;border-radius:8px}
+.tabs a{font-size:11.5px;padding:4px 11px;border-radius:6px;color:var(--txt3);text-decoration:none}
+.tabs a.on{background:var(--panel3);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.ws-right{margin-left:auto;font-size:11.5px;color:var(--txt3)}
+.ws-right b{color:var(--txt2);font-weight:500}
+
+.chains{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:14px 18px 0}
+.lane{display:flex;flex-direction:column;min-width:0}
+.lane-head{
+  display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:9px;
+  background:var(--panel2);border:1px solid var(--line);flex:none;margin-bottom:5px;
+}
+.lane-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.lane.video .lane-dot{background:var(--video);box-shadow:0 0 9px var(--video)}
+.lane.audio .lane-dot{background:var(--audio);box-shadow:0 0 9px var(--audio)}
+.lane-title{font-size:12px;font-weight:600;letter-spacing:.3px}
+.lane.video .lane-title{color:#7ce7f7}
+.lane.audio .lane-title{color:#cbb2ff}
+.lane-src{font-size:10.5px;color:var(--txt3);font-family:"JetBrains Mono",monospace}
+.sw{width:30px;height:17px;border-radius:99px;background:#2a3346;position:relative;flex:none}
+.sw::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#8e9bb3;top:2px;left:2px}
+.sw.on{background:rgba(91,140,255,.32)}
+.sw.on::after{left:15px;background:#7ba0ff;box-shadow:0 0 6px rgba(91,140,255,.8)}
+
+.chain{display:flex;flex-direction:column}
+.node{display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:9px;background:linear-gradient(180deg,#141a24,#0f131a);border:1px solid var(--line)}
+.node-ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;background:#1a2130;color:var(--txt2)}
+.lane.video .node-ic{color:var(--video)}
+.lane.audio .node-ic{color:var(--audio)}
+.node-ic .ic{width:14px;height:14px}
+.node-body{min-width:0;flex:1}
+.node-name{font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:7px}
+.node-name .tag{
+  font-size:9.5px;font-weight:600;padding:0 5px;border-radius:4px;letter-spacing:.4px;
+  background:#1e2734;color:var(--txt3);font-family:"JetBrains Mono",monospace;
+}
+.node-meta{font-size:10.5px;color:var(--txt3);font-family:"JetBrains Mono",monospace;margin-top:1px}
+
+.mod{
+  display:flex;align-items:center;gap:9px;padding:6px 11px 6px 6px;border-radius:9px;
+  background:linear-gradient(180deg,#151b25,#11161e);border:1px solid var(--line);
+  position:relative;overflow:hidden;
+}
+.mod::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2.5px}
+.lane.video .mod::before{background:linear-gradient(180deg,var(--video),transparent)}
+.lane.audio .mod::before{background:linear-gradient(180deg,var(--audio),transparent)}
+.mod.noacc::before{background:linear-gradient(180deg,#39445a,transparent)}
+.grip{color:#3a4557;display:grid;place-items:center;cursor:grab;flex:none}
+.grip .ic{width:12px;height:12px}
+.mod-ic{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;background:#1b2331;color:#8fa4c4;flex:none}
+.lane.video .mod-ic{color:#7fdced}
+.lane.audio .mod-ic{color:#c5a8ff}
+.mod-ic .ic{width:13px;height:13px}
+.mod-body{min-width:0;flex:1}
+.mod-name{font-size:12.5px;font-weight:500;color:var(--txt);display:flex;align-items:center;gap:6px}
+.mod-desc{font-size:10.5px;color:var(--txt3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mod-val{
+  font-family:"JetBrains Mono",monospace;font-size:11.5px;color:#cfd9ea;
+  padding:2px 8px;border-radius:5px;background:#0d1219;border:1px solid var(--line2);flex:none;
+}
+.chev{color:#3f4a5e;flex:none;display:grid;place-items:center}
+.chev .ic{width:13px;height:13px}
+
+.mod.enc{padding:9px 12px 9px 6px;background:linear-gradient(135deg,#17243b,#131a26 55%,#131a26);border-color:#2b4370}
+.mod.enc::before{background:linear-gradient(180deg,#4d8dff,#22d3ee)}
+.mod.enc .mod-ic{background:#1b2c48;color:#8fb6ff;width:28px;height:28px;border-radius:7px}
+.mod.enc .mod-ic .ic{width:15px;height:15px}
+.mod.enc .mod-name{font-size:13px}
+.mod.enc .chip{
+  font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:4px;letter-spacing:.3px;
+  background:rgba(77,141,255,.16);color:#8fb6ff;border:1px solid rgba(77,141,255,.28);
+}
+.swap{font-size:11px;color:#8fb6ff;border:1px solid rgba(77,141,255,.3);background:rgba(77,141,255,.09);padding:3px 9px;border-radius:6px;flex:none}
+.lane.audio .mod.enc{background:linear-gradient(135deg,#241a35,#1a1424 55%,#171320);border-color:#45316b}
+.lane.audio .mod.enc::before{background:linear-gradient(180deg,#a855f7,#b388ff)}
+.lane.audio .mod.enc .mod-ic{background:#2a1f40;color:#c9a7ff}
+.lane.audio .mod.enc .chip{background:rgba(179,136,255,.16);color:#c9a7ff;border-color:rgba(179,136,255,.3)}
+.lane.audio .swap{color:#c9a7ff;border-color:rgba(179,136,255,.3);background:rgba(179,136,255,.09)}
+
+.ins{height:20px;display:flex;align-items:center;justify-content:center;position:relative}
+.ins::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line2)}
+.ins .plus{
+  width:16px;height:16px;border-radius:50%;background:#0f141c;border:1px solid #2b3547;
+  display:grid;place-items:center;color:#4d5a70;position:relative;z-index:1;
+}
+.ins .plus .ic{width:9px;height:9px}
+.add-more{
+  margin-top:7px;height:28px;border-radius:8px;border:1px dashed var(--line3);
+  display:flex;align-items:center;justify-content:center;gap:7px;font-size:11.5px;color:var(--txt3);
+}
+.add-more .ic{width:12px;height:12px}
+
+.output-wrap{padding:10px 18px 14px;flex:none}
+.out{
+  display:flex;align-items:center;gap:14px;padding:10px 14px 10px 16px;border-radius:11px;
+  background:linear-gradient(180deg,#151c28,#10151d);border:1px solid #2a3040;
+  box-shadow:0 6px 24px rgba(0,0,0,.35);position:relative;overflow:hidden;
+}
+.out::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--video),var(--audio));
+}
+.out-ic{
+  width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(145deg,#243654,#1a2333);color:#9db8e8;border:1px solid #2c3a52;
+}
+.out-ic .ic{width:16px;height:16px}
+.out-body{flex:1;min-width:0}
+.out-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.out-name .fmt{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;letter-spacing:.5px;background:rgba(52,211,153,.14);color:var(--ok)}
+.out-path{font-size:10.5px;color:var(--txt3);font-family:"JetBrains Mono",monospace;margin-top:2px}
+.out-cols{display:flex;gap:8px}
+.spec{padding:5px 11px;border-radius:8px;background:#0d1219;border:1px solid var(--line2);min-width:78px}
+.spec-k{font-size:9.5px;color:var(--txt3);letter-spacing:.4px}
+.spec-v{font-size:11.5px;font-family:"JetBrains Mono",monospace;color:#cfd9ea;margin-top:1px}
+
+/* ---------- library ---------- */
+.library{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.lib-ctx{
+  margin:0 12px 8px;padding:7px 10px;border-radius:8px;
+  background:linear-gradient(135deg,rgba(91,140,255,.12),rgba(34,211,238,.06));
+  border:1px solid rgba(91,140,255,.22);font-size:11px;color:#a9c0e8;
+  display:flex;align-items:center;gap:7px;
+}
+.lib-ctx .ic{width:12px;height:12px;color:#7ba0ff;flex:none}
+.lib-ctx b{color:#cfe0ff;font-weight:600}
+.search{
+  margin:0 12px 8px;height:28px;border-radius:7px;background:#0c1016;border:1px solid var(--line);
+  display:flex;align-items:center;gap:7px;padding:0 10px;color:var(--txt3);font-size:11.5px;
+}
+.search .ic{width:13px;height:13px}
+.lib-tabs{display:flex;gap:1px;padding:0 12px 6px;flex:none}
+.lib-tabs span{font-size:11px;padding:4px 9px;border-radius:6px;color:var(--txt3);cursor:pointer}
+.lib-tabs span.on{background:var(--panel3);color:var(--txt);font-weight:500}
+.lib-scroll{overflow:hidden;padding:0 12px 10px;flex:1}
+.grp{margin-bottom:10px}
+.grp-h{
+  font-size:10px;font-weight:600;letter-spacing:1.1px;color:var(--txt3);
+  text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px;
+}
+.grp-h::after{content:"";flex:1;height:1px;background:var(--line)}
+.item{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:7px;background:var(--panel2);margin-bottom:3px;cursor:grab}
+.item .ic{width:13px;height:13px;color:#7d8da6}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:11.5px;color:#dfe6f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-note{font-size:10px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .add{color:#46536a;display:grid;place-items:center}
+.item .add .ic{width:12px;height:12px}
+.hidden-fold{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;
+  background:#0d1118;border:1px dashed #2a3243;font-size:11px;color:var(--txt3);
+}
+.hidden-fold .ic{width:12px;height:12px}
+.hidden-fold b{color:var(--txt2)}
+.hidden-fold .chev{margin-left:auto}
+
+/* ---------- command bar ---------- */
+.cmdbar{background:var(--panel);border-top:1px solid var(--line);display:flex;flex-direction:column;padding:9px 16px 11px;gap:7px}
+.cmd-head{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--txt3);letter-spacing:.8px;text-transform:uppercase;font-weight:600}
+.cmd-head .badge{font-size:9.5px;padding:1px 6px;border-radius:4px;background:rgba(52,211,153,.12);color:var(--ok);letter-spacing:.4px;text-transform:none;font-weight:600}
+.cmd-head .right{margin-left:auto;display:flex;gap:8px;text-transform:none;letter-spacing:0}
+.mini{font-size:10.5px;padding:3px 9px;border-radius:6px;border:1px solid var(--line2);background:var(--panel3);color:var(--txt2);display:flex;align-items:center;gap:5px}
+.mini .ic{width:11px;height:11px}
+.cmd{
+  font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace;font-size:12.5px;
+  background:#080b10;border:1px solid var(--line);border-radius:9px;padding:9px 13px;
+  line-height:1.75;color:#c9d5e8;word-break:break-all;
+}
+.c-b{color:#7ba0ff}.c-k{color:#8fb6ff}.c-v{color:#7ee0b8}.c-f{color:#f0c674}
+.c-p{color:#8b98ad}.c-g{color:#4a566b}
+.cmd-foot{display:flex;align-items:center;gap:16px;font-size:11px;color:var(--txt3)}
+.cmd-foot .dot{width:5px;height:5px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:5px}
+.cmd-foot b{color:var(--txt2);font-weight:500;font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 11l5.5-3v8l-5.5-3z"/></symbol>
+  <symbol id="i-audio" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 10.5v3"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M10 3v3M14 3v3M10 18v3M14 18v3M3 10h3M3 14h3M18 10h3M18 14h3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l8 4.5-8 4.5-8-4.5z"/><path d="M4 12l8 4.5 8-4.5M4 16.5L12 21l8-4.5"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1116 0"/><path d="M12 17l4-5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 012-2h3.4l2 2.5h7.6a2 2 0 012 2v7a2 2 0 01-2 2h-13a2 2 0 01-2-2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24" stroke-width="2.4"><circle cx="9" cy="7" r="1.2"/><circle cx="15" cy="7" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="17" r="1.2"/><circle cx="15" cy="17" r="1.2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V5.5A1.5 1.5 0 0013.5 4h-8A1.5 1.5 0 004 5.5v8A1.5 1.5 0 005.5 15H9"/></symbol>
+  <symbol id="i-wand" viewBox="0 0 24 24"><path d="M5 19l9-9M14.5 5.5l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 13l.7 1.4 1.4.6-1.4.6-.7 1.4-.7-1.4-1.4-.6 1.4-.6z"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 24 24"><path d="M7 3v13a2 2 0 002 2h12M3 7h13a2 2 0 012 2v12"/></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 3h10M7 21h10M7 3c0 5 10 6 10 9s-10 4-10 9"/></symbol>
+  <symbol id="i-speed" viewBox="0 0 24 24"><path d="M13 4L6 13h5l-1 7 7-9h-5z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M11.5 3.5H20v8.5l-8.5 8.5L3.5 12z"/><circle cx="16" cy="8" r="1.2"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="6.5" cy="6.5" r="2.5"/><path d="M8.6 8.4L20 19M20 5L8.6 15.6"/></symbol>
+  <symbol id="i-queue" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 13.5h5.5L10 21l8-10.5h-5.5z"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2s0-2 1.5-2H17a4 4 0 004-4c0-5-4-8-9-8z"/><circle cx="8.5" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24"><path d="M12 3v6M12 15v6M6 9v6M6 3v3M6 18v3M18 9v6M18 3v3M18 18v3"/><circle cx="12" cy="12" r="2.2"/><circle cx="6" cy="15" r="2.2"/><circle cx="18" cy="15" r="2.2"/></symbol>
+</svg>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="logo"><svg class="ic"><use href="#i-play"/></svg></div>
+    <div>
+      <div class="brand-name">FFmpeg Studio</div>
+      <div class="brand-sub">线性参数编排器 · v0.1</div>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-item"><svg class="ic"><use href="#i-queue"/></svg>队列 <b>3</b> 个文件</div>
+    <div class="tb-item"><svg class="ic"><use href="#i-bolt"/></svg>并行 <b>4</b></div>
+    <div class="tb-item"><svg class="ic"><use href="#i-hourglass"/></svg>预计 <b>4:12</b></div>
+    <div class="spacer"></div>
+    <button class="btn ghost"><svg class="ic"><use href="#i-folder"/></svg>导入文件</button>
+    <button class="btn ghost"><svg class="ic"><use href="#i-tag"/></svg>预设方案</button>
+    <button class="btn primary"><svg class="ic"><use href="#i-play"/></svg>开始队列<span class="kbd">F5</span></button>
+  </header>
+
+  <div class="main">
+
+    <aside class="files">
+      <div class="pane-head">输入文件<span class="count">3</span></div>
+      <div class="files-list">
+        <div class="file active">
+          <div class="file-ic"><svg class="ic"><use href="#i-video"/></svg></div>
+          <div class="file-body">
+            <div class="file-name">beach_4k.mp4</div>
+            <div class="file-meta">3840×2160 · 30fps · 4.8 GB</div>
+          </div>
+          <span class="file-state">编辑中</span>
+        </div>
+        <div class="file">
+          <div class="file-ic"><svg class="ic"><use href="#i-video"/></svg></div>
+          <div class="file-body">
+            <div class="file-name">interview_raw.mov</div>
+            <div class="file-meta">1920×1080 · 25fps · 2.1 GB</div>
+          </div>
+          <span class="file-state">待处理</span>
+        </div>
+        <div class="file">
+          <div class="file-ic aud"><svg class="ic"><use href="#i-audio"/></svg></div>
+          <div class="file-body">
+            <div class="file-name">concert_master.wav</div>
+            <div class="file-meta">48 kHz · 24bit · 1.2 GB</div>
+          </div>
+          <span class="file-state done">完成</span>
+        </div>
+        <div class="drop">
+          <svg class="ic"><use href="#i-plus"/></svg>
+          拖入文件或文件夹<br><span style="color:#4a566b">支持批量添加 · 自动识别流</span>
+        </div>
+      </div>
+
+      <div class="side-block">
+        <div class="side-h">输出设置</div>
+        <div class="side-row"><span>目录</span><b>D:\Export\</b></div>
+        <div class="side-row"><span>命名</span><b>{name}_{preset}</b></div>
+        <div class="side-row"><span>同名文件</span><b>自动追加序号</b></div>
+        <div class="side-row"><span>完成后</span><b>保留原文件</b></div>
+      </div>
+
+      <div class="side-block" style="border-top:none;padding-top:4px">
+        <div class="side-h">快捷预设</div>
+        <div class="preset"><span class="pd" style="background:var(--video)"></span>网络分享 1080p<b>H.264</b></div>
+        <div class="preset"><span class="pd" style="background:#34d399"></span>无损归档<b>copy</b></div>
+        <div class="preset"><span class="pd" style="background:var(--audio)"></span>移动端 720p<b>HEVC</b></div>
+      </div>
+
+      <div class="files-foot">
+        <div class="par">
+          <span>并行任务数</span>
+          <div class="seg"><span>1</span><span>2</span><span class="on">4</span><span>8</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <div class="ws-head">
+        <div class="crumb">
+          <svg class="ic"><use href="#i-video"/></svg>
+          <b>beach_4k.mp4</b>
+          <span>/</span>
+          <span>参数链</span>
+        </div>
+        <div class="tabs"><a class="on">参数链</a><a>命令行</a><a>预设</a></div>
+        <div class="ws-right">输出预估 <b>1920×1080 · 30fps · 约 1.8 GB</b></div>
+      </div>
+
+      <div class="chains">
+        <!-- VIDEO -->
+        <div class="lane video">
+          <div class="lane-head">
+            <span class="lane-dot"></span>
+            <span class="lane-title">视频流</span>
+            <span class="lane-src">v:0 · h264 · 3840×2160 · 30fps</span>
+            <span class="spacer"></span>
+            <div class="sw on"></div>
+          </div>
+          <div class="chain">
+            <div class="node">
+              <div class="node-ic"><svg class="ic"><use href="#i-video"/></svg></div>
+              <div class="node-body">
+                <div class="node-name">源视频流 <span class="tag">v:0</span></div>
+                <div class="node-meta">h264 High · yuv420p · 3840×2160 · 30 fps</div>
+              </div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod enc">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-chip"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">视频编码器 <span class="chip">软件 · CPU</span></div>
+                <div class="mod-desc">libx264 — H.264 / AVC · 兼容 MP4 / MKV / MOV</div>
+              </div>
+              <div class="swap">更换</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-sliders"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">质量控制</div>
+                <div class="mod-desc">恒定质量 CRF · 忽略目标码率</div>
+              </div>
+              <div class="mod-val">CRF 20</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-scale"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">分辨率缩放</div>
+                <div class="mod-desc">3840×2160 → 1920×1080 · lanczos</div>
+              </div>
+              <div class="mod-val">50%</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-clock"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">帧率</div>
+                <div class="mod-desc">保持原始帧率，不做重采样</div>
+              </div>
+              <div class="mod-val">保持</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-layers"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">像素格式</div>
+                <div class="mod-desc">8-bit 4:2:0 · 播放器最大兼容性</div>
+              </div>
+              <div class="mod-val">yuv420p</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-palette"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">色彩空间</div>
+                <div class="mod-desc">BT.709 · 由 HDR 转为 SDR</div>
+              </div>
+              <div class="mod-val">bt709</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-gauge"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">编码预设</div>
+                <div class="mod-desc">压缩效率优先 · 编码更慢</div>
+              </div>
+              <div class="mod-val">slow</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-crop"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">叠加水印</div>
+                <div class="mod-desc">overlay · 右下角 · 透明度 70%</div>
+              </div>
+              <div class="mod-val">logo.png</div>
+            </div>
+          </div>
+          <div class="add-more"><svg class="ic"><use href="#i-plus"/></svg>在此处插入参数模块</div>
+        </div>
+
+        <!-- AUDIO -->
+        <div class="lane audio">
+          <div class="lane-head">
+            <span class="lane-dot"></span>
+            <span class="lane-title">音频流</span>
+            <span class="lane-src">a:0 · aac · 48 kHz · 2ch · 192k</span>
+            <span class="spacer"></span>
+            <div class="sw on"></div>
+          </div>
+          <div class="chain">
+            <div class="node">
+              <div class="node-ic"><svg class="ic"><use href="#i-audio"/></svg></div>
+              <div class="node-body">
+                <div class="node-name">源音频流 <span class="tag">a:0</span></div>
+                <div class="node-meta">aac LC · 48000 Hz · stereo · 192 kbps</div>
+              </div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod enc">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-chip"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">音频编码器 <span class="chip">内置</span></div>
+                <div class="mod-desc">aac — AAC-LC · 兼容 MP4 / M4A / MKV</div>
+              </div>
+              <div class="swap">更换</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-sliders"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">音频比特率</div>
+                <div class="mod-desc">固定码率 CBR · 192 kbps</div>
+              </div>
+              <div class="mod-val">192k</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-layers"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">采样率</div>
+                <div class="mod-desc">保持源采样率，不做转换</div>
+              </div>
+              <div class="mod-val">48 kHz</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-audio"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">声道布局</div>
+                <div class="mod-desc">保持立体声，不做混音</div>
+              </div>
+              <div class="mod-val">stereo</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-tune"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">响度标准化</div>
+                <div class="mod-desc">loudnorm 单遍 · 网络视频标准</div>
+              </div>
+              <div class="mod-val">-16 LUFS</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod noacc" style="opacity:.48;border-style:dashed">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-lock"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name" style="color:#93a1b8">两遍编码</div>
+                <div class="mod-desc">与「响度标准化」冲突，已自动停用</div>
+              </div>
+              <div class="chev"><svg class="ic"><use href="#i-chev-d"/></svg></div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-tune"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">音频降噪</div>
+                <div class="mod-desc">afftdn 频谱减除 · 去除底噪</div>
+              </div>
+              <div class="mod-val">-30 dB</div>
+            </div>
+
+            <div class="ins"><div class="plus"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+
+            <div class="mod">
+              <div class="grip"><svg class="ic"><use href="#i-grip"/></svg></div>
+              <div class="mod-ic"><svg class="ic"><use href="#i-audio"/></svg></div>
+              <div class="mod-body">
+                <div class="mod-name">淡入淡出</div>
+                <div class="mod-desc">afade · 入 0.5s / 出 1.5s</div>
+              </div>
+              <div class="mod-val">0.5 / 1.5s</div>
+            </div>
+          </div>
+          <div class="add-more"><svg class="ic"><use href="#i-plus"/></svg>在此处插入参数模块</div>
+        </div>
+      </div>
+
+      <div class="output-wrap">
+        <div class="out">
+          <div class="out-ic"><svg class="ic"><use href="#i-box"/></svg></div>
+          <div class="out-body">
+            <div class="out-name">输出封装 <span class="fmt">MP4</span></div>
+            <div class="out-path">D:\Export\{name}_1080p.mp4</div>
+          </div>
+          <div class="out-cols">
+            <div class="spec"><div class="spec-k">视频</div><div class="spec-v">H.264</div></div>
+            <div class="spec"><div class="spec-k">音频</div><div class="spec-v">AAC 192k</div></div>
+            <div class="spec"><div class="spec-k">快速启动</div><div class="spec-v">开</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="library">
+      <div class="pane-head">参数模块库</div>
+      <div class="lib-ctx">
+        <svg class="ic"><use href="#i-bolt"/></svg>
+        <span>已按 <b>libx264</b> + <b>MP4</b> 过滤，仅显示可用模块</span>
+      </div>
+      <div class="search"><svg class="ic"><use href="#i-search"/></svg>搜索参数模块…</div>
+      <div class="lib-tabs"><span class="on">全部</span><span>视频</span><span>音频</span><span>滤镜</span></div>
+
+      <div class="lib-scroll">
+        <div class="grp">
+          <div class="grp-h">画质</div>
+          <div class="item"><svg class="ic"><use href="#i-sliders"/></svg><div class="item-body"><div class="item-name">恒定质量 CRF</div><div class="item-note">0–51，越小质量越高</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-gauge"/></svg><div class="item-body"><div class="item-name">目标码率</div><div class="item-note">VBR / CBR 平均码率</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-speed"/></svg><div class="item-body"><div class="item-name">两遍编码</div><div class="item-note">最高码率精度，耗时翻倍</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">画面</div>
+          <div class="item"><svg class="ic"><use href="#i-scale"/></svg><div class="item-body"><div class="item-name">分辨率缩放</div><div class="item-note">scale 滤镜 + 重采样算法</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-crop"/></svg><div class="item-body"><div class="item-name">画面裁剪</div><div class="item-note">crop，四边像素 / 居中裁切</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-layers"/></svg><div class="item-body"><div class="item-name">旋转 / 翻转</div><div class="item-note">90° 步进或任意角度</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-wand"/></svg><div class="item-body"><div class="item-name">锐化 / 降噪</div><div class="item-note">unsharp、hqdn3d</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">时间与剪辑</div>
+          <div class="item"><svg class="ic"><use href="#i-clock"/></svg><div class="item-body"><div class="item-name">帧率重采样</div><div class="item-note">变换 / 插帧 / 丢帧</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-scissors"/></svg><div class="item-body"><div class="item-name">时间片段裁剪</div><div class="item-note">-ss / -to，快速定位</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-layers"/></svg><div class="item-body"><div class="item-name">关键帧间隔 GOP</div><div class="item-note">-g，影响拖动定位</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+        </div>
+
+        <div class="grp" style="margin-bottom:8px">
+          <div class="grp-h">音频</div>
+          <div class="item"><svg class="ic"><use href="#i-tune"/></svg><div class="item-body"><div class="item-name">响度标准化</div><div class="item-note">loudnorm，EBU R128</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-audio"/></svg><div class="item-body"><div class="item-name">采样率转换</div><div class="item-note">aresample，重采样质量</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+          <div class="item"><svg class="ic"><use href="#i-audio"/></svg><div class="item-body"><div class="item-name">声道混音 / 下混</div><div class="item-note">5.1 → 立体声 权重表</div></div><div class="add"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+        </div>
+
+        <div class="hidden-fold">
+          <svg class="ic"><use href="#i-lock"/></svg>
+          <span>已隐藏 <b>7</b> 个与当前设置不兼容的模块</span>
+          <div class="chev"><svg class="ic"><use href="#i-chev-d"/></svg></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="cmdbar">
+    <div class="cmd-head">
+      生成的命令
+      <span class="badge">实时同步</span>
+      <div class="right">
+        <div class="mini"><svg class="ic"><use href="#i-copy"/></svg>复制</div>
+        <div class="mini"><svg class="ic"><use href="#i-hourglass"/></svg>仅执行此文件</div>
+      </div>
+    </div>
+    <div class="cmd">
+      <span class="c-b">ffmpeg</span> <span class="c-k">-i</span> <span class="c-p">"beach_4k.mp4"</span>
+      <span class="c-k">-vf</span> <span class="c-f">"scale=1920:1080:flags=lanczos"</span>
+      <span class="c-k">-c:v</span> <span class="c-v">libx264</span>
+      <span class="c-k">-crf</span> <span class="c-v">20</span>
+      <span class="c-k">-preset</span> <span class="c-v">slow</span>
+      <span class="c-k">-pix_fmt</span> <span class="c-v">yuv420p</span>
+      <span class="c-k">-colorspace</span> <span class="c-v">bt709</span>
+      <span class="c-k">-c:a</span> <span class="c-v">aac</span>
+      <span class="c-k">-b:a</span> <span class="c-v">192k</span>
+      <span class="c-k">-af</span> <span class="c-f">"loudnorm=I=-16:TP=-1.5:LRA=11"</span>
+      <span class="c-k">-movflags</span> <span class="c-v">+faststart</span>
+      <span class="c-p">"D:\Export\beach_4k_1080p.mp4"</span>
+    </div>
+    <div class="cmd-foot">
+      <span><span class="dot"></span>命令有效</span>
+      <span>编码器 <b>libx264</b></span>
+      <span>封装 <b>MP4</b></span>
+      <span>预计体积 <b>1.8 GB</b></span>
+      <span style="margin-left:auto;color:#4a566b">模块顺序即参数顺序 · 拖动卡片可重排 · 点击卡片查看详细说明</span>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

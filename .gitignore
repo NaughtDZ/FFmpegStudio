@@ -1,0 +1,16 @@
+# 构建产物
+bin/
+obj/
+dist/
+
+# 测试素材与大文件（不入库，本地回归用）
+_testmedia/
+testvideo.mp4
+
+# IDE
+.vs/
+*.user
+*.suo
+
+# 临时脚本
+_*.py

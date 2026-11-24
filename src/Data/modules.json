@@ -1,0 +1,579 @@
+{
+  "schemaVersion": 1,
+  "note": "L2 组合层：模块 = 若干 ffmpeg flag 的组合，bindings 声明「什么编码器下用什么 flag」。新增编码器支持通常只需加一行 binding。",
+  "modules": [
+    {
+      "id": "video.quality.crf",
+      "scope": "video",
+      "category": "画质",
+      "title": "质量控制",
+      "subtitle": "恒定质量 CRF · 忽略目标码率",
+      "icon": "sliders",
+      "level": "basic",
+      "doc": "用恒定速率因子控制画质：编码器按画面复杂度分配码率，而不是给一个固定目标。数值越低画质越好、文件越大。CRF 20 在 1080p 下通常肉眼无法与原片区分。",
+      "controls": [
+        {
+          "key": "crf",
+          "type": "int",
+          "label": "CRF 值",
+          "min": 0,
+          "max": 51,
+          "default": "20",
+          "presets": [
+            {
+              "label": "视觉无损",
+              "value": "18"
+            },
+            {
+              "label": "均衡",
+              "value": "20"
+            },
+            {
+              "label": "小体积",
+              "value": "26"
+            },
+            {
+              "label": "极省",
+              "value": "30"
+            }
+          ]
+        }
+      ],
+      "summary": "CRF {crf}",
+      "conflicts": [
+        "video.quality.bitrate"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "libx264",
+              "libx265",
+              "libsvtav1",
+              "libvpx-vp9"
+            ]
+          },
+          "emit": [
+            "-crf",
+            "{crf}"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "h264_nvenc",
+              "hevc_nvenc"
+            ]
+          },
+          "emit": [
+            "-rc",
+            "vbr",
+            "-cq",
+            "{crf}"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "h264_qsv",
+              "hevc_qsv"
+            ]
+          },
+          "emit": [
+            "-global_quality",
+            "{crf}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.quality.bitrate",
+      "scope": "video",
+      "category": "画质",
+      "title": "目标码率",
+      "subtitle": "平均码率 VBR · 与 CRF 互斥",
+      "icon": "gauge",
+      "level": "basic",
+      "doc": "给定目标平均码率，编码器在复杂画面多给、简单画面少给。适合有严格码率上限的场景（直播、光盘、上传限制）。与「质量控制 CRF」互斥，二者只能选其一。",
+      "controls": [
+        {
+          "key": "bitrate",
+          "type": "string",
+          "label": "码率",
+          "default": "8M",
+          "presets": [
+            {
+              "label": "4 Mbps",
+              "value": "4M"
+            },
+            {
+              "label": "8 Mbps",
+              "value": "8M"
+            },
+            {
+              "label": "16 Mbps",
+              "value": "16M"
+            }
+          ]
+        }
+      ],
+      "summary": "{bitrate}",
+      "conflicts": [
+        "video.quality.crf"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-b:v",
+            "{bitrate}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.preset",
+      "scope": "video",
+      "category": "画质",
+      "title": "编码预设",
+      "subtitle": "速度与压缩率的权衡",
+      "icon": "bolt",
+      "level": "basic",
+      "doc": "预设是一组编码器内部参数的组合。越快越省时间但同画质下文件更大；越慢压缩效率越高。编码速度不影响画质上限，只影响「同样画质要花多少码率」。",
+      "controls": [
+        {
+          "key": "speed",
+          "type": "enum",
+          "label": "预设",
+          "default": "medium",
+          "options": [
+            {
+              "value": "ultrafast",
+              "label": "最快 · ultrafast"
+            },
+            {
+              "value": "veryfast",
+              "label": "很快 · veryfast"
+            },
+            {
+              "value": "medium",
+              "label": "均衡 · medium"
+            },
+            {
+              "value": "slow",
+              "label": "较慢 · slow"
+            },
+            {
+              "value": "veryslow",
+              "label": "最慢 · veryslow"
+            }
+          ]
+        }
+      ],
+      "summary": "{speed}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "libx264",
+              "libx265"
+            ]
+          },
+          "emit": [
+            "-preset",
+            "{speed}"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "h264_nvenc",
+              "hevc_nvenc"
+            ]
+          },
+          "emit": [
+            "-preset",
+            "{speed}"
+          ],
+          "valueMap": {
+            "ultrafast": "p1",
+            "veryfast": "p2",
+            "medium": "p4",
+            "slow": "p6",
+            "veryslow": "p7"
+          }
+        },
+        {
+          "when": {
+            "encoder": [
+              "h264_qsv",
+              "hevc_qsv"
+            ]
+          },
+          "emit": [
+            "-preset",
+            "{speed}"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "libsvtav1"
+            ]
+          },
+          "emit": [
+            "-preset",
+            "{speed}"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "libvpx-vp9"
+            ]
+          },
+          "emit": [
+            "-deadline",
+            "good",
+            "-cpu-used",
+            "{speed}"
+          ],
+          "valueMap": {
+            "ultrafast": "6",
+            "veryfast": "5",
+            "medium": "3",
+            "slow": "1",
+            "veryslow": "0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "video.scale",
+      "scope": "video",
+      "category": "画面",
+      "title": "分辨率缩放",
+      "subtitle": "scale 滤镜 · lanczos 重采样",
+      "icon": "scale",
+      "kind": "filter",
+      "level": "basic",
+      "doc": "把画面缩放到指定分辨率。lanczos 质量最好但最慢，bilinear 最快。缩放必须解码重编码，所以 copy 模式下不可用。",
+      "controls": [
+        {
+          "key": "width",
+          "type": "int",
+          "label": "宽",
+          "min": 16,
+          "max": 16384,
+          "default": "1920"
+        },
+        {
+          "key": "height",
+          "type": "int",
+          "label": "高",
+          "min": 16,
+          "max": 16384,
+          "default": "1080"
+        },
+        {
+          "key": "flags",
+          "type": "enum",
+          "label": "重采样",
+          "default": "lanczos",
+          "options": [
+            {
+              "value": "lanczos",
+              "label": "lanczos · 质量最好"
+            },
+            {
+              "value": "bicubic",
+              "label": "bicubic · 均衡"
+            },
+            {
+              "value": "bilinear",
+              "label": "bilinear · 最快"
+            }
+          ]
+        }
+      ],
+      "summary": "→ {width}×{height}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "scale={width}:{height}:flags={flags}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.fps",
+      "scope": "video",
+      "category": "时间",
+      "title": "帧率",
+      "subtitle": "每秒帧数",
+      "icon": "clock",
+      "level": "basic",
+      "doc": "设定输出帧率。降低可减小体积并让画面更「电影感」，提高需要源素材本身支持。设为「保持」则沿用源帧率。",
+      "controls": [
+        {
+          "key": "fps",
+          "type": "enum",
+          "label": "帧率",
+          "default": "keep",
+          "options": [
+            {
+              "value": "keep",
+              "label": "保持原始"
+            },
+            {
+              "value": "24",
+              "label": "24 fps"
+            },
+            {
+              "value": "30",
+              "label": "30 fps"
+            },
+            {
+              "value": "60",
+              "label": "60 fps"
+            }
+          ]
+        }
+      ],
+      "summary": "{fps}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-r",
+            "{fps}"
+          ],
+          "skipIf": {
+            "fps": "keep"
+          }
+        }
+      ]
+    },
+    {
+      "id": "video.pixfmt",
+      "scope": "video",
+      "category": "画面",
+      "title": "像素格式",
+      "subtitle": "色彩采样与位深",
+      "icon": "layers",
+      "level": "advanced",
+      "doc": "yuv420p 是最大兼容性选择，几乎所有播放器和网页都能播。10-bit（yuv420p10le）能减少色带但兼容性差。RGB 格式一般只用于中间处理。",
+      "controls": [
+        {
+          "key": "pixfmt",
+          "type": "enum",
+          "label": "像素格式",
+          "default": "yuv420p",
+          "options": [
+            {
+              "value": "yuv420p",
+              "label": "yuv420p · 8-bit 4:2:0 最兼容"
+            },
+            {
+              "value": "yuv420p10le",
+              "label": "yuv420p10le · 10-bit 4:2:0"
+            },
+            {
+              "value": "yuv444p",
+              "label": "yuv444p · 无色彩抽样"
+            },
+            {
+              "value": "nv12",
+              "label": "nv12 · 硬件编码常用"
+            }
+          ]
+        }
+      ],
+      "summary": "{pixfmt}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-pix_fmt",
+            "{pixfmt}"
+          ]
+        }
+      ],
+      "excludeEncoders": [
+        "copy"
+      ]
+    },
+    {
+      "id": "audio.bitrate",
+      "scope": "audio",
+      "category": "音频",
+      "title": "音频比特率",
+      "subtitle": "固定码率 CBR",
+      "icon": "sliders",
+      "level": "basic",
+      "doc": "AAC 在 128k 已接近透明，192k 留有余量。Opus 效率更高，96k 即可达到类似效果。",
+      "controls": [
+        {
+          "key": "abitrate",
+          "type": "string",
+          "label": "比特率",
+          "default": "192k",
+          "presets": [
+            {
+              "label": "96k · 语音",
+              "value": "96k"
+            },
+            {
+              "label": "128k · 通用",
+              "value": "128k"
+            },
+            {
+              "label": "192k · 高质量",
+              "value": "192k"
+            },
+            {
+              "label": "320k · 接近无损",
+              "value": "320k"
+            }
+          ]
+        }
+      ],
+      "summary": "{abitrate}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-b:a",
+            "{abitrate}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.samplerate",
+      "scope": "audio",
+      "category": "音频",
+      "title": "采样率",
+      "subtitle": "每秒采样次数",
+      "icon": "audio",
+      "level": "advanced",
+      "doc": "44100 Hz 是 CD 标准，48000 Hz 是视频标准。降低采样率会丢失高频信息，提高不会增加信息量（除非源本来更高）。",
+      "controls": [
+        {
+          "key": "ar",
+          "type": "enum",
+          "label": "采样率",
+          "default": "keep",
+          "options": [
+            {
+              "value": "keep",
+              "label": "保持原始"
+            },
+            {
+              "value": "44100",
+              "label": "44100 Hz · CD"
+            },
+            {
+              "value": "48000",
+              "label": "48000 Hz · 视频标准"
+            },
+            {
+              "value": "96000",
+              "label": "96000 Hz · 高解析"
+            }
+          ]
+        }
+      ],
+      "summary": "{ar}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-ar",
+            "{ar}"
+          ],
+          "skipIf": {
+            "ar": "keep"
+          }
+        }
+      ]
+    },
+    {
+      "id": "audio.loudnorm",
+      "scope": "audio",
+      "category": "音频",
+      "title": "响度标准化",
+      "subtitle": "EBU R128 · 网络平台标准",
+      "icon": "tune",
+      "kind": "filter",
+      "level": "basic",
+      "doc": "把整体响度归一化到目标值。B 站/YouTube 一般 -14 LUFS，播客 -16 LUFS，广电 -23 LUFS。能解决「有的视频声音特别小」的问题。",
+      "controls": [
+        {
+          "key": "lufs",
+          "type": "enum",
+          "label": "目标响度",
+          "default": "-16",
+          "options": [
+            {
+              "value": "-14",
+              "label": "-14 LUFS · 视频平台"
+            },
+            {
+              "value": "-16",
+              "label": "-16 LUFS · 播客"
+            },
+            {
+              "value": "-23",
+              "label": "-23 LUFS · 广电"
+            }
+          ]
+        }
+      ],
+      "summary": "{lufs} LUFS",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "loudnorm=I={lufs}:TP=-1.5:LRA=11"
+          ]
+        }
+      ]
+    }
+  ]
+}

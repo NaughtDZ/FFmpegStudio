@@ -98,7 +98,8 @@ Public Class ModuleEvaluator
     Private Shared ReadOnly GlobalFlags As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
         "-i", "-r", "-pix_fmt", "-s", "-b:v", "-b:a", "-ar", "-ac", "-vf", "-af",
         "-c:v", "-c:a", "-f", "-movflags", "-ss", "-to", "-t", "-map", "-metadata",
-        "-threads", "-filter_complex", "-q:v", "-q:a", "-y", "-vn", "-an"
+        "-threads", "-filter_complex", "-q:v", "-q:a", "-y", "-vn", "-an",
+        "-g", "-bf", "-profile:v", "-colorspace", "-ac", "-acodec", "-vcodec"
     }
 
     ''' <summary>对单个模块求值。</summary>
@@ -132,8 +133,12 @@ Public Class ModuleEvaluator
         Dim hit As BindingDefinition = Nothing
         Dim nearMiss As BindingDefinition = Nothing
 
+        Dim probe = ctx.GetInstance(def)
+
         For Each b In def.Bindings
             If MatchesEncoder(b.Condition, ctx, def.Scope) AndAlso MatchesRest(b.Condition, ctx, def.Scope) Then
+                ' RunIf：一个模块可能有多种形态，只有值对上的那条 binding 才产出
+                If b.RunIf IsNot Nothing AndAlso Not ValuesMatch(b.RunIf, probe) Then Continue For
                 hit = b
                 Exit For
             ElseIf MatchesRest(b.Condition, ctx, def.Scope) AndAlso Not MatchAnyEncoder(b.Condition) Then
@@ -307,6 +312,15 @@ Public Class ModuleEvaluator
             If enc Is Nothing OrElse Not enc.SupportsFlag(c.RequiresFlag) Then Return False
         End If
 
+        Return True
+    End Function
+
+    Private Shared Function ValuesMatch(rule As Dictionary(Of String, String), inst As ModuleInstance) As Boolean
+        For Each kv In rule
+            Dim v As String = Nothing
+            If Not inst.Values.TryGetValue(kv.Key, v) Then Return False
+            If Not String.Equals(v, kv.Value, StringComparison.OrdinalIgnoreCase) Then Return False
+        Next
         Return True
     End Function
 

@@ -134,6 +134,9 @@ Public Class BindingDefinition
     ''' <summary>当某个控件取到指定值时，整条 binding 不输出（如「保持原始帧率」）。</summary>
     Public Property SkipIf As Dictionary(Of String, String)
 
+    ' <summary>只有当某个控件取到指定值时才输出——用于一个模块有多种形态（如旋转的六种方式）。</summary>
+    Public Property RunIf As Dictionary(Of String, String)
+
     Public Sub New()
         Condition = New ConditionDefinition()
     End Sub

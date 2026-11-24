@@ -46,6 +46,17 @@ Class MainWindow
                 Dim wantId = argv(selIdx + 1)
                 Dim card = _vm.VideoChain.FirstOrDefault(
                     Function(c) String.Equals(c.Instance.Definition.Id, wantId, StringComparison.OrdinalIgnoreCase))
+
+                ' 不在默认链上的模块：先加进链再选中，方便自动化截图/验证
+                If card Is Nothing Then
+                    Dim def = _vm.Library.Find(wantId)
+                    If def IsNot Nothing Then
+                        _vm.AddToChain(def)
+                        card = _vm.VideoChain.FirstOrDefault(
+                            Function(c) String.Equals(c.Instance.Definition.Id, wantId, StringComparison.OrdinalIgnoreCase))
+                    End If
+                End If
+
                 If card IsNot Nothing Then _vm.SelectedCard = card
             End If
 
@@ -243,11 +254,10 @@ Class MainWindow
         Dim library = ModuleLibrary.LoadEmbedded()
         Dim evaluator As New ModuleEvaluator()
 
+        ' 全部模块都挂上：既能验证每条 binding 都能求值，也能验证互斥关系
         Dim chain As New List(Of ModuleInstance)()
-        For Each id In New String() {"video.quality.crf", "video.scale", "video.preset", "video.fps",
-                                     "video.pixfmt", "audio.bitrate", "audio.loudnorm"}
-            Dim d = library.Find(id)
-            If d IsNot Nothing Then chain.Add(d.CreateInstance())
+        For Each def In library.Modules
+            chain.Add(def.CreateInstance())
         Next
 
         Dim ctx As New EvalContext With {

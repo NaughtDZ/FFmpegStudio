@@ -574,6 +574,1099 @@
           ]
         }
       ]
+    },
+    {
+      "id": "video.crop",
+      "scope": "video",
+      "category": "画面",
+      "title": "画面裁剪",
+      "subtitle": "crop 滤镜 · 从四边裁掉像素",
+      "icon": "crop",
+      "kind": "filter",
+      "level": "basic",
+      "doc": "裁掉画面的一部分。常用于去掉黑边、裁掉水印区域、或者把横屏改成竖屏的局部。裁剪会重新编码，copy 模式下不可用。",
+      "controls": [
+        {
+          "key": "w",
+          "type": "int",
+          "label": "宽",
+          "min": 16,
+          "max": 16384,
+          "default": "1280"
+        },
+        {
+          "key": "h",
+          "type": "int",
+          "label": "高",
+          "min": 16,
+          "max": 16384,
+          "default": "720"
+        },
+        {
+          "key": "x",
+          "type": "int",
+          "label": "左偏移",
+          "min": 0,
+          "max": 16384,
+          "default": "0"
+        },
+        {
+          "key": "y",
+          "type": "int",
+          "label": "上偏移",
+          "min": 0,
+          "max": 16384,
+          "default": "0"
+        }
+      ],
+      "summary": "{w}×{h} @{x},{y}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "crop={w}:{h}:{x}:{y}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.rotate",
+      "scope": "video",
+      "category": "画面",
+      "title": "旋转 / 翻转",
+      "subtitle": "transpose / hflip / vflip",
+      "icon": "rotate",
+      "kind": "filter",
+      "level": "basic",
+      "doc": "把画面旋转 90°/180°/270°，或者水平/垂直镜像。手机竖拍转横屏就用这里。",
+      "controls": [
+        {
+          "key": "mode",
+          "type": "enum",
+          "label": "方式",
+          "default": "none",
+          "options": [
+            {
+              "value": "none",
+              "label": "不处理"
+            },
+            {
+              "value": "cw",
+              "label": "顺时针 90°"
+            },
+            {
+              "value": "ccw",
+              "label": "逆时针 90°"
+            },
+            {
+              "value": "180",
+              "label": "旋转 180°"
+            },
+            {
+              "value": "hflip",
+              "label": "水平镜像"
+            },
+            {
+              "value": "vflip",
+              "label": "垂直镜像"
+            }
+          ]
+        }
+      ],
+      "summary": "{mode}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "none"
+          },
+          "emit": []
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "cw"
+          },
+          "emit": [
+            "transpose=clock"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "ccw"
+          },
+          "emit": [
+            "transpose=cclock"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "180"
+          },
+          "emit": [
+            "transpose=clock,transpose=clock"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "hflip"
+          },
+          "emit": [
+            "hflip"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "vflip"
+          },
+          "emit": [
+            "vflip"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.pad",
+      "scope": "video",
+      "category": "画面",
+      "title": "填充画布",
+      "subtitle": "pad 滤镜 · 加黑边/居中",
+      "icon": "layers",
+      "kind": "filter",
+      "level": "advanced",
+      "doc": "把画面放进更大的画布中央，多出来的部分填黑（或指定颜色）。用于统一不同比例素材的输出尺寸。",
+      "controls": [
+        {
+          "key": "w",
+          "type": "int",
+          "label": "画布宽",
+          "min": 16,
+          "max": 16384,
+          "default": "1920"
+        },
+        {
+          "key": "h",
+          "type": "int",
+          "label": "画布高",
+          "min": 16,
+          "max": 16384,
+          "default": "1080"
+        },
+        {
+          "key": "color",
+          "type": "enum",
+          "label": "填充色",
+          "default": "black",
+          "options": [
+            {
+              "value": "black",
+              "label": "黑色"
+            },
+            {
+              "value": "white",
+              "label": "白色"
+            },
+            {
+              "value": "#101010",
+              "label": "深灰"
+            }
+          ]
+        }
+      ],
+      "summary": "{w}×{h}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:color={color}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.sharpen",
+      "scope": "video",
+      "category": "画面",
+      "title": "锐化",
+      "subtitle": "unsharp 滤镜 · 提升边缘对比",
+      "icon": "sparkle",
+      "kind": "filter",
+      "level": "advanced",
+      "doc": "增强边缘对比，让画面看起来更清晰。过度锐化会产生白边和噪点，建议从低强度试起。",
+      "controls": [
+        {
+          "key": "amount",
+          "type": "enum",
+          "label": "强度",
+          "default": "1.0",
+          "options": [
+            {
+              "value": "0.5",
+              "label": "轻微 0.5"
+            },
+            {
+              "value": "1.0",
+              "label": "标准 1.0"
+            },
+            {
+              "value": "1.5",
+              "label": "较强 1.5"
+            },
+            {
+              "value": "2.5",
+              "label": "很强 2.5"
+            }
+          ]
+        }
+      ],
+      "summary": "强度 {amount}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "unsharp=5:5:{amount}:5:5:0"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.denoise",
+      "scope": "video",
+      "category": "画面",
+      "title": "视频降噪",
+      "subtitle": "hqdn3d · 时域+空域降噪",
+      "icon": "sparkle",
+      "kind": "filter",
+      "level": "advanced",
+      "doc": "减少暗部噪点和颗粒感。降噪越强画面越糊，且编码体积反而可能变大（细节被抹成平坦区域后压缩器更吃力）。",
+      "controls": [
+        {
+          "key": "level",
+          "type": "enum",
+          "label": "强度",
+          "default": "light",
+          "options": [
+            {
+              "value": "light",
+              "label": "轻微 · 保留纹理"
+            },
+            {
+              "value": "medium",
+              "label": "中等"
+            },
+            {
+              "value": "strong",
+              "label": "强力 · 会损失细节"
+            }
+          ]
+        }
+      ],
+      "summary": "{level}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "level": "light"
+          },
+          "emit": [
+            "hqdn3d=1.5:1.5:6:6"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "level": "medium"
+          },
+          "emit": [
+            "hqdn3d=3:3:9:9"
+          ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "level": "strong"
+          },
+          "emit": [
+            "hqdn3d=6:6:12:12"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.deinterlace",
+      "scope": "video",
+      "category": "画面",
+      "title": "去交错",
+      "subtitle": "yadif · 处理隔行扫描素材",
+      "icon": "layers",
+      "kind": "filter",
+      "level": "advanced",
+      "doc": "老式摄像机/电视录制素材是隔行的，直接转码会出现横向锯齿。yadif 能把它还原成逐行画面。",
+      "controls": [
+        {
+          "key": "mode",
+          "type": "enum",
+          "label": "模式",
+          "default": "send_frame",
+          "options": [
+            {
+              "value": "send_frame",
+              "label": "每帧输出一帧"
+            },
+            {
+              "value": "send_field",
+              "label": "每场输出一帧（帧率翻倍）"
+            }
+          ]
+        }
+      ],
+      "summary": "{mode}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "yadif=mode={mode}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.trim",
+      "scope": "video",
+      "category": "时间",
+      "title": "片段裁剪",
+      "subtitle": "从指定时间开始 / 结束",
+      "icon": "scissors",
+      "level": "basic",
+      "doc": "只保留时间轴上的一段。这里用的是输出侧 seek，定位精确但需要解码前面的内容，比输入侧慢一些。",
+      "controls": [
+        {
+          "key": "start",
+          "type": "string",
+          "label": "开始时间",
+          "default": "00:00:05"
+        },
+        {
+          "key": "end",
+          "type": "string",
+          "label": "结束时间",
+          "default": "00:00:30"
+        }
+      ],
+      "summary": "{start} → {end}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-ss",
+            "{start}",
+            "-to",
+            "{end}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.profile",
+      "scope": "video",
+      "category": "画质",
+      "title": "编码档次 Profile",
+      "subtitle": "H.264/H.265 的兼容性等级",
+      "icon": "gauge",
+      "level": "advanced",
+      "doc": "Profile 决定目标设备能不能播。baseline 兼容最老设备但没有 B 帧；main 适合移动端；high 是桌面和高清标准。注意：high/main/baseline 都只支持 8-bit 4:2:0，所以这个模块会同时把像素格式钉成 yuv420p——源素材如果是 4:4:4，不加这一步编码器会直接报错。",
+      "controls": [
+        {
+          "key": "profile",
+          "type": "enum",
+          "label": "Profile",
+          "default": "high",
+          "options": [
+            {
+              "value": "baseline",
+              "label": "baseline · 最老设备"
+            },
+            {
+              "value": "main",
+              "label": "main · 移动端"
+            },
+            {
+              "value": "high",
+              "label": "high · 标准高清"
+            }
+          ]
+        }
+      ],
+      "summary": "{profile}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "libx264",
+              "libx265"
+            ]
+          },
+          "emit": [
+            "-profile:v",
+            "{profile}",
+            "-pix_fmt",
+            "yuv420p"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.tune",
+      "scope": "video",
+      "category": "画质",
+      "title": "编码调优 Tune",
+      "subtitle": "按素材类型优化 x264/x265",
+      "icon": "tune",
+      "level": "advanced",
+      "doc": "告诉编码器素材属于哪类内容，它会调整内部参数。film 保留颗粒感，animation 适合卡通，grain 保留噪点。",
+      "controls": [
+        {
+          "key": "tune",
+          "type": "enum",
+          "label": "Tune",
+          "default": "film",
+          "options": [
+            {
+              "value": "film",
+              "label": "film · 实拍电影"
+            },
+            {
+              "value": "animation",
+              "label": "animation · 动画"
+            },
+            {
+              "value": "grain",
+              "label": "grain · 保留颗粒"
+            },
+            {
+              "value": "stillimage",
+              "label": "stillimage · 静态图"
+            },
+            {
+              "value": "fastdecode",
+              "label": "fastdecode · 解码优先"
+            },
+            {
+              "value": "zerolatency",
+              "label": "zerolatency · 低延迟"
+            }
+          ]
+        }
+      ],
+      "summary": "{tune}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "libx264",
+              "libx265"
+            ]
+          },
+          "emit": [
+            "-tune",
+            "{tune}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.gop",
+      "scope": "video",
+      "category": "画质",
+      "title": "关键帧间隔 GOP",
+      "subtitle": "-g · 每隔多少帧一个关键帧",
+      "icon": "clock",
+      "level": "advanced",
+      "doc": "GOP 越长压缩率越高但拖动定位越难。视频网站通常要求 2 秒一个关键帧（30fps 就是 60）。",
+      "controls": [
+        {
+          "key": "gop",
+          "type": "enum",
+          "label": "间隔",
+          "default": "60",
+          "options": [
+            {
+              "value": "30",
+              "label": "30 帧 · 约 1 秒"
+            },
+            {
+              "value": "60",
+              "label": "60 帧 · 约 2 秒"
+            },
+            {
+              "value": "120",
+              "label": "120 帧 · 约 4 秒"
+            },
+            {
+              "value": "250",
+              "label": "250 帧 · 默认"
+            }
+          ]
+        }
+      ],
+      "summary": "每 {gop} 帧",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-g",
+            "{gop}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.bframes",
+      "scope": "video",
+      "category": "画质",
+      "title": "B 帧数量",
+      "subtitle": "-bf · 双向预测帧",
+      "icon": "layers",
+      "level": "advanced",
+      "doc": "B 帧越多压缩率越高，但编码更慢、延迟更大、对老设备兼容性略差。直播场景一般设 0。",
+      "controls": [
+        {
+          "key": "bf",
+          "type": "enum",
+          "label": "数量",
+          "default": "3",
+          "options": [
+            {
+              "value": "0",
+              "label": "0 · 直播/低延迟"
+            },
+            {
+              "value": "2",
+              "label": "2"
+            },
+            {
+              "value": "3",
+              "label": "3 · 默认"
+            },
+            {
+              "value": "5",
+              "label": "5 · 高压缩"
+            }
+          ]
+        }
+      ],
+      "summary": "{bf} 帧",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "libx264",
+              "libx265"
+            ]
+          },
+          "emit": [
+            "-bf",
+            "{bf}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.colorspace",
+      "scope": "video",
+      "category": "画质",
+      "title": "色彩空间",
+      "subtitle": "BT.709 / BT.601 标记",
+      "icon": "palette",
+      "level": "advanced",
+      "doc": "告诉播放器这段视频按哪个色彩标准来解释。标错会导致颜色发灰或过饱和。1080p 及以上用 bt709，DVD 时代的用 bt601。",
+      "controls": [
+        {
+          "key": "cs",
+          "type": "enum",
+          "label": "标准",
+          "default": "bt709",
+          "options": [
+            {
+              "value": "bt709",
+              "label": "BT.709 · 高清标准"
+            },
+            {
+              "value": "bt601",
+              "label": "BT.601 · 标清"
+            },
+            {
+              "value": "bt2020",
+              "label": "BT.2020 · 4K/HDR"
+            }
+          ]
+        }
+      ],
+      "summary": "{cs}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-colorspace",
+            "{cs}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.channels",
+      "scope": "audio",
+      "category": "音频",
+      "title": "声道布局",
+      "subtitle": "-ac · 强制输出声道数",
+      "icon": "audio",
+      "kind": "",
+      "level": "basic",
+      "doc": "把音频转成单声道 / 立体声 / 5.1。降声道会混音（不是简单丢弃），升声道不会凭空产生信息。",
+      "controls": [
+        {
+          "key": "ch",
+          "type": "enum",
+          "label": "声道",
+          "default": "2",
+          "options": [
+            {
+              "value": "1",
+              "label": "单声道"
+            },
+            {
+              "value": "2",
+              "label": "立体声"
+            },
+            {
+              "value": "6",
+              "label": "5.1 环绕"
+            }
+          ]
+        }
+      ],
+      "summary": "{ch} ch",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "-ac",
+            "{ch}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.volume",
+      "scope": "audio",
+      "category": "音频",
+      "title": "音量调整",
+      "subtitle": "volume 滤镜 · 增益/衰减",
+      "icon": "sliders",
+      "kind": "filter",
+      "level": "basic",
+      "doc": "整体调大或调小音量。单位分贝，+6dB 约等于响度翻倍，-6dB 减半。和「响度标准化」互斥——一个是手动，一个是自动。",
+      "controls": [
+        {
+          "key": "gain",
+          "type": "enum",
+          "label": "增益",
+          "default": "0",
+          "options": [
+            {
+              "value": "-12",
+              "label": "-12 dB"
+            },
+            {
+              "value": "-6",
+              "label": "-6 dB"
+            },
+            {
+              "value": "0",
+              "label": "0 dB 不变"
+            },
+            {
+              "value": "3",
+              "label": "+3 dB"
+            },
+            {
+              "value": "6",
+              "label": "+6 dB"
+            },
+            {
+              "value": "12",
+              "label": "+12 dB"
+            }
+          ]
+        }
+      ],
+      "summary": "{gain} dB",
+      "conflicts": [
+        "audio.loudnorm"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "volume={gain}dB"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.fade",
+      "scope": "audio",
+      "category": "音频",
+      "title": "淡入",
+      "subtitle": "afade · 开头渐强",
+      "icon": "audio",
+      "kind": "filter",
+      "level": "basic",
+      "doc": "开头从静音渐强到正常音量，避免爆音或突兀起播。时长单位秒。",
+      "controls": [
+        {
+          "key": "fin",
+          "type": "string",
+          "label": "淡入时长(秒)",
+          "default": "0.5"
+        }
+      ],
+      "summary": "{fin}s",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "afade=t=in:st=0:d={fin}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.fadeout",
+      "scope": "audio",
+      "category": "音频",
+      "title": "淡出",
+      "subtitle": "反向淡入 · 结尾渐弱",
+      "icon": "audio",
+      "kind": "filter",
+      "level": "basic",
+      "doc": "结尾从正常音量渐弱到静音，避免戛然而止。实现方式是「反转 → 淡入 → 再反转」，因此不需要事先知道音频总时长（代价是整段音频要在内存里过一遍）。",
+      "controls": [
+        {
+          "key": "fout",
+          "type": "string",
+          "label": "淡出时长(秒)",
+          "default": "1.5"
+        }
+      ],
+      "summary": "{fout}s",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "areverse,afade=t=in:st=0:d={fout},areverse"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.denoise",
+      "scope": "audio",
+      "category": "音频",
+      "title": "音频降噪",
+      "subtitle": "afftdn · 频谱减除",
+      "icon": "sparkle",
+      "kind": "filter",
+      "level": "advanced",
+      "doc": "压制持续的背景底噪（风扇声、嘶声）。对稳态噪声有效，对人声、音乐基本无感。强度太大会让声音发闷。",
+      "controls": [
+        {
+          "key": "nr",
+          "type": "enum",
+          "label": "降噪强度",
+          "default": "12",
+          "options": [
+            {
+              "value": "6",
+              "label": "轻微 6 dB"
+            },
+            {
+              "value": "12",
+              "label": "标准 12 dB"
+            },
+            {
+              "value": "24",
+              "label": "强力 24 dB"
+            }
+          ]
+        }
+      ],
+      "summary": "降 {nr} dB",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "afftdn=nr={nr}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.compressor",
+      "scope": "audio",
+      "category": "音频",
+      "title": "动态压缩",
+      "subtitle": "acompressor · 压大放小",
+      "icon": "gauge",
+      "kind": "filter",
+      "level": "advanced",
+      "doc": "把过大的声音压下来，让整体响度更均匀。适合解说、播客这类忽大忽小的素材。阈值越低压得越多。",
+      "controls": [
+        {
+          "key": "th",
+          "type": "enum",
+          "label": "阈值",
+          "default": "0.1",
+          "options": [
+            {
+              "value": "0.3",
+              "label": "轻微 · 阈值高"
+            },
+            {
+              "value": "0.1",
+              "label": "标准"
+            },
+            {
+              "value": "0.03",
+              "label": "强力 · 阈值低"
+            }
+          ]
+        }
+      ],
+      "summary": "阈值 {th}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "acompressor=threshold={th}:ratio=3:attack=5:release=100"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audio.quality",
+      "scope": "audio",
+      "category": "音频",
+      "title": "音频质量 VBR",
+      "subtitle": "-q:a · 可变码率",
+      "icon": "sliders",
+      "level": "advanced",
+      "doc": "用质量等级代替固定码率，编码器按内容复杂度自动分配。数值越大质量越高。与「音频比特率」互斥。",
+      "controls": [
+        {
+          "key": "q",
+          "type": "enum",
+          "label": "质量",
+          "default": "2",
+          "options": [
+            {
+              "value": "0",
+              "label": "0 · 最好"
+            },
+            {
+              "value": "2",
+              "label": "2 · 高质量"
+            },
+            {
+              "value": "4",
+              "label": "4 · 均衡"
+            },
+            {
+              "value": "6",
+              "label": "6 · 小体积"
+            }
+          ]
+        }
+      ],
+      "summary": "q={q}",
+      "conflicts": [
+        "audio.bitrate"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "libmp3lame",
+              "libvorbis",
+              "libopus"
+            ]
+          },
+          "emit": [
+            "-q:a",
+            "{q}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "container.faststart",
+      "scope": "container",
+      "category": "输出",
+      "title": "快速启动",
+      "subtitle": "moov atom 前置 · 网页秒开",
+      "icon": "box",
+      "level": "basic",
+      "doc": "把 MP4 的索引信息挪到文件开头。没有它，网页播放器要下载完整个文件才能开始播。上传到任何视频平台都建议开。",
+      "controls": [
+        {
+          "key": "on",
+          "type": "enum",
+          "label": "状态",
+          "default": "on",
+          "options": [
+            {
+              "value": "on",
+              "label": "开启"
+            },
+            {
+              "value": "off",
+              "label": "关闭"
+            }
+          ]
+        }
+      ],
+      "summary": "{on}",
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ],
+            "container": [
+              "mp4",
+              "mov",
+              "m4a"
+            ]
+          },
+          "emit": [
+            "-movflags",
+            "+faststart"
+          ],
+          "skipIf": {
+            "on": "off"
+          }
+        }
+      ]
     }
   ]
 }

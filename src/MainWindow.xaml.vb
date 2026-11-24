@@ -60,17 +60,24 @@ Class MainWindow
                 If card IsNot Nothing Then _vm.SelectedCard = card
             End If
 
-            ' --set <moduleId> <key> <value>：改一个参数值，用于验证「改值 → 命令更新」链路
-            Dim setIdx = Array.IndexOf(argv, "--set")
-            If setIdx >= 0 AndAlso setIdx + 3 < argv.Length Then
-                Dim id = argv(setIdx + 1) : Dim key = argv(setIdx + 2) : Dim val = argv(setIdx + 3)
-                Dim inst = _vm.VideoInstances.FirstOrDefault(
-                    Function(i) String.Equals(i.Definition.Id, id, StringComparison.OrdinalIgnoreCase))
-                If inst IsNot Nothing Then
-                    inst.Values(key) = val
-                    _vm.Rebuild()
+            ' --set <moduleId> <key> <value>：可重复。用循环而不是 IndexOf，否则只会处理第一个
+            Dim si = 0
+            Dim anySet = False
+            While si < argv.Length
+                If argv(si) = "--set" AndAlso si + 3 < argv.Length Then
+                    Dim mid = argv(si + 1) : Dim key = argv(si + 2) : Dim val = argv(si + 3)
+                    Dim target = _vm.VideoInstances.Concat(_vm.AudioInstances).FirstOrDefault(
+                        Function(x) String.Equals(x.Definition.Id, mid, StringComparison.OrdinalIgnoreCase))
+                    If target IsNot Nothing Then
+                        target.Values(key) = val
+                        anySet = True
+                    End If
+                    si += 4
+                Else
+                    si += 1
                 End If
-            End If
+            End While
+            If anySet Then _vm.Rebuild()
 
             ' --mode av|video|audio：切换媒体模式，用于验证三种输出形态
             Dim modeIdx = Array.IndexOf(argv, "--mode")
@@ -85,16 +92,32 @@ Class MainWindow
                 End Select
             End If
 
-            ' --command-out <file>：把当前生成的命令写到文件，便于用真实素材回放验证
-            Dim cmdOutIdx = Array.IndexOf(argv, "--command-out")
-            If cmdOutIdx >= 0 AndAlso cmdOutIdx + 1 < argv.Length Then
-                File.WriteAllText(argv(cmdOutIdx + 1), _vm.CommandText, System.Text.Encoding.UTF8)
-            End If
-
             ' --add "a.mp4;b.mp3"：启动即导入文件（自动化测试用）
             Dim addIdx = Array.IndexOf(argv, "--add")
             If addIdx >= 0 AndAlso addIdx + 1 < argv.Length Then
                 _vm.AddFiles(argv(addIdx + 1).Split(";"c))
+            End If
+
+            ' 输出目录 / 方案读写（自动化测试用）
+            Dim outDirIdx = Array.IndexOf(argv, "--outdir")
+            If outDirIdx >= 0 AndAlso outDirIdx + 1 < argv.Length Then
+                _vm.OutputDirectory = argv(outDirIdx + 1)
+            End If
+
+            Dim loadIdx = Array.IndexOf(argv, "--load-preset")
+            If loadIdx >= 0 AndAlso loadIdx + 1 < argv.Length Then
+                PresetService.Load(_vm, argv(loadIdx + 1))
+            End If
+
+            Dim saveIdx = Array.IndexOf(argv, "--save-preset")
+            If saveIdx >= 0 AndAlso saveIdx + 1 < argv.Length Then
+                PresetService.Save(_vm, argv(saveIdx + 1))
+            End If
+
+            ' 放到最后：导出的必须是所有参数都处理完之后的状态
+            Dim cmdOutIdx = Array.IndexOf(argv, "--command-out")
+            If cmdOutIdx >= 0 AndAlso cmdOutIdx + 1 < argv.Length Then
+                File.WriteAllText(argv(cmdOutIdx + 1), _vm.CommandText, System.Text.Encoding.UTF8)
             End If
 
             CapText.Text = $"内置 ffmpeg {_vm.Capabilities.FfmpegVersion.Split("-"c)(0)} · " &
@@ -159,6 +182,52 @@ Class MainWindow
     End Sub
 
     ''' <summary>点击任务 → 整个界面跟随该任务的媒体模式。</summary>
+
+    ' ---------- 输出目录 ----------
+
+    Private Sub PickOutputDir_Click(sender As Object, e As RoutedEventArgs)
+        If _vm Is Nothing Then Return
+        Dim dlg As New Microsoft.Win32.OpenFolderDialog() With {
+            .Title = "选择输出目录",
+            .Multiselect = False
+        }
+        If dlg.ShowDialog() = True AndAlso Not String.IsNullOrEmpty(dlg.FolderName) Then
+            _vm.OutputDirectory = dlg.FolderName
+        End If
+    End Sub
+
+    ' ---------- 方案 ----------
+
+    Private Sub SavePreset_Click(sender As Object, e As RoutedEventArgs)
+        If _vm Is Nothing Then Return
+        Dim dlg As New Microsoft.Win32.SaveFileDialog() With {
+            .Title = "保存方案",
+            .Filter = "方案文件|*.json|所有文件|*.*",
+            .DefaultExt = ".json",
+            .FileName = "方案.json"
+        }
+        If dlg.ShowDialog() = True Then
+            Try
+                PresetService.Save(_vm, dlg.FileName)
+            Catch ex As Exception
+                MessageBox.Show("保存失败：" & ex.Message, "FFmpeg Studio")
+            End Try
+        End If
+    End Sub
+
+    Private Sub LoadPreset_Click(sender As Object, e As RoutedEventArgs)
+        If _vm Is Nothing Then Return
+        Dim dlg As New Microsoft.Win32.OpenFileDialog() With {
+            .Title = "打开方案",
+            .Filter = "方案文件|*.json|所有文件|*.*"
+        }
+        If dlg.ShowDialog() = True Then
+            If Not PresetService.Load(_vm, dlg.FileName) Then
+                MessageBox.Show("这个文件不是有效的方案。", "FFmpeg Studio")
+            End If
+        End If
+    End Sub
+
     Private Sub Job_Click(sender As Object, e As MouseButtonEventArgs)
         Dim fe = TryCast(sender, FrameworkElement)
         Dim job = TryCast(fe?.DataContext, JobVm)

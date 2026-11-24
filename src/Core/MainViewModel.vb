@@ -451,7 +451,10 @@ Public Class MainViewModel
             Return _container
         End Get
         Set(value As String)
-            If SetField(_container, value, NameOf(Container)) Then Rebuild()
+            If SetField(_container, value, NameOf(Container)) Then
+                Raise(NameOf(OutputDirectoryDisplay))
+                RecalculateOutputs()
+            End If
         End Set
     End Property
 
@@ -899,24 +902,14 @@ Public Class MainViewModel
         If Jobs.Any(Function(j) String.Equals(j.InputPath, path, StringComparison.OrdinalIgnoreCase)) Then Return False
 
         Dim info = MediaProbe.Probe(FfmpegLocator.Ffprobe, path)
-        Dim inDir = IO.Path.GetDirectoryName(path)
-        Dim name = IO.Path.GetFileNameWithoutExtension(path)
-
-        ' 纯音频输出用 m4a/mka 这类音频容器扩展名，避免 mp4 里只有一个音轨的怪异产物
-        Dim ext As String
-        If info.HasVideo Then
-            ext = "." & Container
-        Else
-            ext = If(Container = "mp4", ".m4a", ".mka")
-        End If
 
         Dim job As New JobVm With {
             .InputPath = path,
-            .OutputPath = IO.Path.Combine(inDir, "out", name & "_out" & ext),
             .Media = info,
             .IncludesVideo = info.HasVideo,
             .IncludesAudio = info.HasAudio
         }
+        job.OutputPath = BuildOutputPath(job)
 
         Jobs.Add(job)
         Return True
@@ -934,6 +927,99 @@ Public Class MainViewModel
         For Each j In Jobs.Where(Function(x) x.Status <> JobStatus.Pending AndAlso x.Status <> JobStatus.Running).ToList()
             Jobs.Remove(j)
         Next
+        Rebuild()
+    End Sub
+
+
+    ' ================= 输出目录 =================
+
+    Private _outputDirectory As String = ""
+
+    ' 输出根目录。空 = 每个文件自己旁边的 out\ 目录。
+    Public Property OutputDirectory As String
+        Get
+            Return _outputDirectory
+        End Get
+        Set(value As String)
+            If SetField(_outputDirectory, value, NameOf(OutputDirectory)) Then
+                Raise(NameOf(OutputDirectoryDisplay))
+                RecalculateOutputs()
+            End If
+        End Set
+    End Property
+
+    Public ReadOnly Property OutputDirectoryDisplay As String
+        Get
+            If String.IsNullOrEmpty(_outputDirectory) Then Return "（跟随输入文件）"
+            Return _outputDirectory
+        End Get
+    End Property
+
+    ' 按当前设置算出某个任务的输出路径。
+    Public Function BuildOutputPath(job As JobVm) As String
+        Dim dir As String
+        If String.IsNullOrEmpty(_outputDirectory) Then
+            Dim inDir = IO.Path.GetDirectoryName(job.InputPath)
+            dir = If(String.IsNullOrEmpty(inDir), "out", IO.Path.Combine(inDir, "out"))
+        Else
+            dir = _outputDirectory
+        End If
+
+        ' 纯音频输出用音频容器扩展名，避免 mp4 里只有一个音轨的怪异产物
+        Dim ext As String
+        If job.IncludesVideo Then
+            ext = "." & Container
+        Else
+            ext = If(Container = "mp4", ".m4a", ".mka")
+        End If
+
+        Return IO.Path.Combine(dir, IO.Path.GetFileNameWithoutExtension(job.InputPath) & "_out" & ext)
+    End Function
+
+    ' 输出目录 / 容器 / 媒体模式变化后，刷新所有还没开始的任务
+    Public Sub RecalculateOutputs()
+        For Each j In Jobs
+            If j.Status <> JobStatus.Pending Then Continue For
+            j.OutputPath = BuildOutputPath(j)
+        Next
+        Rebuild()
+    End Sub
+
+    ' ================= 方案套用 =================
+
+    Public Sub ApplyPreset(data As PresetData)
+        If data Is Nothing OrElse Library Is Nothing Then Return
+
+        _videoEncoder = If(String.IsNullOrEmpty(data.VideoEncoder), _videoEncoder, data.VideoEncoder)
+        _audioEncoder = If(String.IsNullOrEmpty(data.AudioEncoder), _audioEncoder, data.AudioEncoder)
+        _container = If(String.IsNullOrEmpty(data.Container), _container, data.Container)
+        _includesVideo = data.IncludesVideo
+        _includesAudio = data.IncludesAudio
+
+        Raise(NameOf(VideoEncoder))
+        Raise(NameOf(AudioEncoder))
+        Raise(NameOf(Container))
+        Raise(NameOf(IncludesVideo))
+        Raise(NameOf(IncludesAudio))
+
+        VideoInstances.Clear()
+        AudioInstances.Clear()
+
+        For Each pm In data.Modules
+            Dim def = Library.Find(pm.Id)
+            If def Is Nothing Then Continue For      ' 方案里有、当前模块库没有的模块直接跳过
+            Dim inst = def.CreateInstance()
+            For Each kv In pm.Values
+                If inst.Values.ContainsKey(kv.Key) Then inst.Values(kv.Key) = kv.Value
+            Next
+            If String.Equals(def.Scope, "audio", StringComparison.OrdinalIgnoreCase) Then
+                AudioInstances.Add(inst)
+            Else
+                VideoInstances.Add(inst)
+            End If
+        Next
+
+        RecalculateOutputs()
         Rebuild()
     End Sub
 

@@ -91,6 +91,25 @@ pwsh ./tools/dump-capabilities.ps1 -Ffmpeg "path\to\ffmpeg.exe"
 
 产物写入 `src/Data/capabilities.json`（约 0.72 MB）。
 
+## 方案（预设）
+
+当前参数链可以存成 `.json` 方案，下次一键套用。
+
+方案里只存「模块 id + 参数值」，不存模块定义本身——定义永远来自 `modules.json`，
+所以以后模块的说明、默认值、binding 更新了，老方案也能跟着受益。
+
+```json
+{
+  "SchemaVersion": 1,
+  "VideoEncoder": "libx264",
+  "Container": "mp4",
+  "Modules": [
+    { "Id": "video.quality.crf", "Values": { "crf": "20" } },
+    { "Id": "video.scale", "Values": { "width": "1280", "height": "720" } }
+  ]
+}
+```
+
 ## 目录结构
 
 ```
@@ -117,14 +136,17 @@ build.ps1               构建 / 发布
 | `--enc <name>` | 预设视频编码器 |
 | `--select <moduleId>` | 打开指定模块的编辑面板 |
 | `--mode av\|video\|audio` | 预设媒体模式 |
+| `--outdir <dir>` | 设置输出目录 |
+| `--set <模块id> <键> <值>` | 改参数（可重复） |
+| `--save-preset <json>` / `--load-preset <json>` | 方案存取 |
+| `--command-out <txt>` | 把生成的命令写到文件 |
 
 ## 已知未完成
 
-- 模块拖拽重排
-- 方案保存 / 加载
-- 输出目录可配置（目前固定写在输入文件同级的 `out\`）
-- 模块数量（目前 9 个，目标 30+）
-- 硬件编码器（NVENC/QSV）的运行时可用性探测
+- 模块拖拽重排（目前按添加顺序）
+- 硬件编码器（NVENC/QSV）的运行时可用性探测（现在只信构建期能力表）
+- 多音轨 / 多视频流的 -map 处理
+- 两遍编码（需要跑两次 ffmpeg，当前执行模型是单次）
 
 ## 许可
 

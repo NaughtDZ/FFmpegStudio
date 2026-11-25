@@ -149,7 +149,20 @@ Public Class ModuleEvaluator
         If hit Is Nothing Then
             If nearMiss IsNot Nothing Then
                 result.State = ModuleState.Conditional
-                result.Reason = "需要 " & String.Join(" / ", nearMiss.Condition.Encoder) & " 编码器"
+
+                ' 原因要说准：可能是编码器不对，也可能是容器不对（如无损容器没有码率概念）
+                Dim why As New List(Of String)()
+                Dim encName2 = ctx.EncoderNameFor(def.Scope)
+                If nearMiss.Condition.Encoder IsNot Nothing AndAlso nearMiss.Condition.Encoder.Count > 0 AndAlso
+                   Not nearMiss.Condition.Encoder.Any(Function(e) e = "*" OrElse String.Equals(e, encName2, StringComparison.OrdinalIgnoreCase)) Then
+                    why.Add("需要 " & String.Join(" / ", nearMiss.Condition.Encoder) & " 编码器")
+                End If
+                If nearMiss.Condition.Container IsNot Nothing AndAlso nearMiss.Condition.Container.Count > 0 AndAlso
+                   Not nearMiss.Condition.Container.Any(Function(c2) String.Equals(c2, ctx.ContainerName, StringComparison.OrdinalIgnoreCase)) Then
+                    why.Add("容器 " & ctx.ContainerName & " 不支持")
+                End If
+
+                result.Reason = If(why.Count > 0, String.Join("；", why), "当前组合不支持此参数")
             Else
                 result.State = ModuleState.Hidden
                 result.Reason = $"当前编码器 {encName} 不支持此参数"

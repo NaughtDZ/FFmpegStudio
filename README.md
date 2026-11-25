@@ -2,6 +2,8 @@
 
 线性图形化的 ffmpeg 前端。不写命令行，按「流 + 参数模块链」的方式拼出一条 ffmpeg 命令并执行。
 
+视频转码和**纯音频转换**都能做——输出容器共 12 种，音频侧支持 mp3 / flac / wav / m4a / ogg / opus / aac / wma。
+
 > **v0.1.0 已发布** —— [下载便携包](https://github.com/NaughtDZ/FFmpegStudio/releases/tag/V0.1.0)（Windows x64，解压即用，无需安装 .NET、无需另装 ffmpeg）
 
 ![主界面](docs/screenshot-main.png)
@@ -150,6 +152,17 @@ pwsh ./tools/dump-capabilities.ps1 -Ffmpeg "path\to\ffmpeg.exe"
 | 画质 | CRF、目标码率、预设、Profile、Tune、GOP、B 帧、色彩空间、两遍编码 |
 | 音频 | 比特率、采样率、VBR、声道、音量、淡入、淡出、降噪、压缩、高通、低通、均衡、响度归一、重采样质量 |
 | 输出 | 轨道选择、快速启动、元数据 |
+
+## 输出格式
+
+| 视频容器 | 音频容器 |
+|---|---|
+| mp4 / mkv / mov / webm | m4a / mp3 / flac / wav / ogg / opus / aac / wma |
+
+选音频容器时会自动关掉视频流（mp3 里装不下视频）；拿带视频的素材选 mp3，等于提取音频。
+音频编码器会跟着容器收窄：mp3 → libmp3lame、flac → flac、wav → pcm_s16le、ogg → libvorbis/libopus。
+
+无损容器（flac / wav）没有码率概念，「音频比特率」模块会自动变成条件可用，不会往命令里塞 `-b:a`。
 
 ## 目录结构
 

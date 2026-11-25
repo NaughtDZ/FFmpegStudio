@@ -435,7 +435,7 @@
       "subtitle": "固定码率 CBR",
       "icon": "sliders",
       "level": "basic",
-      "doc": "AAC 在 128k 已接近透明，192k 留有余量。Opus 效率更高，96k 即可达到类似效果。",
+      "doc": "AAC 在 128k 已接近透明，192k 留有余量。Opus 效率更高，96k 即可达到类似效果。无损容器（flac / wav）没有码率概念，这个模块会自动变为条件可用。",
       "controls": [
         {
           "key": "abitrate",
@@ -468,6 +468,18 @@
           "when": {
             "encoder": [
               "*"
+            ],
+            "container": [
+              "mp4",
+              "mkv",
+              "mov",
+              "webm",
+              "m4a",
+              "mp3",
+              "ogg",
+              "opus",
+              "aac",
+              "wma"
             ]
           },
           "emit": [

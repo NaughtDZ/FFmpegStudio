@@ -164,6 +164,10 @@ pwsh ./tools/dump-capabilities.ps1 -Ffmpeg "path\to\ffmpeg.exe"
 
 无损容器（flac / wav）没有码率概念，「音频比特率」模块会自动变成条件可用，不会往命令里塞 `-b:a`。
 
+## 发版
+
+发版流程和踩过的坑见 [RELEASING.md](RELEASING.md)。
+
 ## 目录结构
 
 ```

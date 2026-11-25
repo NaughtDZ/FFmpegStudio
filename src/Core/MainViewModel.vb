@@ -935,6 +935,22 @@ Public Class MainViewModel
     End Sub
 
 
+    ''' <summary>
+    ''' 输出文件已存在就自动改名为 "名字 (2).ext"，绝不静默覆盖已有文件。
+    ''' ffmpeg 带 -y 会直接盖掉同名输出，用户转两次同一个文件就丢第一次的成果。
+    ''' </summary>
+    Private Shared Function EnsureUniquePath(path As String) As String
+        If String.IsNullOrEmpty(path) OrElse Not IO.File.Exists(path) Then Return path
+        Dim dir = IO.Path.GetDirectoryName(path)
+        Dim name = IO.Path.GetFileNameWithoutExtension(path)
+        Dim ext = IO.Path.GetExtension(path)
+        For i = 2 To 9999
+            Dim candidate = IO.Path.Combine(dir, $"{name} ({i}){ext}")
+            If Not IO.File.Exists(candidate) Then Return candidate
+        Next
+        Return path
+    End Function
+
     Private Shared Function IsTwoPass(ctx As EvalContext) As Boolean
         Dim inst = ctx.Instances.FirstOrDefault(
             Function(i) String.Equals(i.Definition.Id, "video.twopass", StringComparison.OrdinalIgnoreCase))
@@ -954,8 +970,15 @@ Public Class MainViewModel
         ' 每个任务按自己的媒体模式生成参数：纯音频文件绝不会带上 -c:v
         Dim ctx = BuildContext(job.IncludesVideo, job.IncludesAudio)
 
+        ' 同名输出绝不覆盖：改成 "名字 (2).ext" 并同步到界面
+        Dim finalOut = EnsureUniquePath(job.OutputPath)
+        If Not String.Equals(finalOut, job.OutputPath, StringComparison.OrdinalIgnoreCase) Then
+            Dim renamed = finalOut
+            Await Application.Current.Dispatcher.InvokeAsync(Sub() job.OutputPath = renamed)
+        End If
+
         Dim args As New List(Of String) From {"-hide_banner", "-nostdin", "-y", "-progress", "pipe:1", "-nostats"}
-        args.AddRange(_evaluator.BuildArguments(ctx, job.InputPath, job.OutputPath))
+        args.AddRange(_evaluator.BuildArguments(ctx, job.InputPath, finalOut))
 
         Try
             Dim outDir = IO.Path.GetDirectoryName(job.OutputPath)

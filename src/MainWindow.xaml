@@ -612,6 +612,25 @@
                                            Foreground="#93A1B8" TextTrimming="CharacterEllipsis"
                                            VerticalAlignment="Center" ToolTip="{Binding OutputDirectoryDisplay}"/>
                             </DockPanel>
+
+                            <TextBlock Text="文件名模板" FontSize="10" Foreground="#5D6B82" Margin="0,9,0,0"/>
+                            <TextBox Text="{Binding OutputNameTemplate, UpdateSourceTrigger=LostFocus}"
+                                     Margin="0,4,0,0" Height="23" Padding="6,1"
+                                     Background="#0D1219" BorderBrush="#28303F" BorderThickness="1"
+                                     Foreground="#CFD9EA" FontFamily="Consolas" FontSize="11"
+                                     CaretBrush="#8FD8FF"/>
+                            <TextBlock Text="{}可用: name date time index container" FontSize="9"
+                                       Foreground="#46536A" Margin="0,3,0,0"
+                                       ToolTip="name=原文件名  date=日期  time=时间  index=队列序号  container=容器名"/>
+
+                            <TextBlock Text="同名文件" FontSize="10" Foreground="#5D6B82" Margin="0,9,0,0"/>
+                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding OverwriteMode}"
+                                      Margin="0,4,0,0" Height="23" Style="{DynamicResource DarkCombo}"
+                                      FontSize="11">
+                                <ComboBoxItem Content="自动改名（不覆盖）" Tag="rename"/>
+                                <ComboBoxItem Content="覆盖同名文件" Tag="overwrite"/>
+                                <ComboBoxItem Content="跳过已存在的" Tag="skip"/>
+                            </ComboBox>
                         </StackPanel>
                     </Border>
                 </Grid>

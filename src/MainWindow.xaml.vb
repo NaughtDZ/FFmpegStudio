@@ -173,6 +173,16 @@ Class MainWindow
                 _vm.Container = argv(contIdx + 1)
             End If
 
+            ' --name-template <tpl> / --overwrite <rename|overwrite|skip>
+            Dim tplIdx = Array.IndexOf(argv, "--name-template")
+            If tplIdx >= 0 AndAlso tplIdx + 1 < argv.Length Then
+                _vm.OutputNameTemplate = argv(tplIdx + 1)
+            End If
+            Dim owIdx = Array.IndexOf(argv, "--overwrite")
+            If owIdx >= 0 AndAlso owIdx + 1 < argv.Length Then
+                _vm.OverwriteMode = argv(owIdx + 1)
+            End If
+
             ' 输出目录 / 方案读写（自动化测试用）
             Dim outDirIdx = Array.IndexOf(argv, "--outdir")
             If outDirIdx >= 0 AndAlso outDirIdx + 1 < argv.Length Then

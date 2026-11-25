@@ -970,8 +970,24 @@ Public Class MainViewModel
         ' 每个任务按自己的媒体模式生成参数：纯音频文件绝不会带上 -c:v
         Dim ctx = BuildContext(job.IncludesVideo, job.IncludesAudio)
 
-        ' 同名输出绝不覆盖：改成 "名字 (2).ext" 并同步到界面
-        Dim finalOut = EnsureUniquePath(job.OutputPath)
+        ' 同名冲突按用户选的策略处理
+        Dim finalOut = job.OutputPath
+        If IO.File.Exists(finalOut) Then
+            Select Case _overwriteMode
+                Case "overwrite"
+                    ' 保持原路径，让 ffmpeg 的 -y 覆盖
+                Case "skip"
+                    Await Application.Current.Dispatcher.InvokeAsync(Sub()
+                                                                         job.Status = JobStatus.Done
+                                                                         job.Percent = 100
+                                                                         job.Message = "已存在，跳过"
+                                                                     End Sub)
+                    Return
+                Case Else
+                    finalOut = EnsureUniquePath(finalOut)
+            End Select
+        End If
+
         If Not String.Equals(finalOut, job.OutputPath, StringComparison.OrdinalIgnoreCase) Then
             Dim renamed = finalOut
             Await Application.Current.Dispatcher.InvokeAsync(Sub() job.OutputPath = renamed)
@@ -1150,6 +1166,30 @@ Public Class MainViewModel
         End Set
     End Property
 
+    ' 输出文件名模板。可用占位：{name} {date} {time} {index} {container}
+    Private _outputNameTemplate As String = "{name}_out"
+    Public Property OutputNameTemplate As String
+        Get
+            Return _outputNameTemplate
+        End Get
+        Set(value As String)
+            If SetField(_outputNameTemplate, value, NameOf(OutputNameTemplate)) Then
+                RecalculateOutputs()
+            End If
+        End Set
+    End Property
+
+    ' 同名冲突策略：rename（自动改名）/ overwrite（覆盖）/ skip（跳过）
+    Private _overwriteMode As String = "rename"
+    Public Property OverwriteMode As String
+        Get
+            Return _overwriteMode
+        End Get
+        Set(value As String)
+            SetField(_overwriteMode, value, NameOf(OverwriteMode))
+        End Set
+    End Property
+
     Public ReadOnly Property OutputDirectoryDisplay As String
         Get
             If String.IsNullOrEmpty(_outputDirectory) Then Return "（跟随输入文件）"
@@ -1158,6 +1198,27 @@ Public Class MainViewModel
     End Property
 
     ' 按当前设置算出某个任务的输出路径。
+    ' 把 "名字 (2).ext" 这类唯一性保证抽出来，路径生成和运行时都用
+    Private Function ExpandNameTemplate(job As JobVm) As String
+        Dim tmpl = If(String.IsNullOrWhiteSpace(_outputNameTemplate), "{name}_out", _outputNameTemplate)
+        Dim original = IO.Path.GetFileNameWithoutExtension(job.InputPath)
+        Dim idx = Jobs.IndexOf(job) + 1
+
+        Dim result = tmpl.Replace("{name}", original).
+            Replace("{date}", DateTime.Now.ToString("yyyyMMdd")).
+            Replace("{time}", DateTime.Now.ToString("HHmmss")).
+            Replace("{container}", Container).
+            Replace("{index}", idx.ToString())
+
+        ' 文件名里不能有非法字符（模板是用户手打的）
+        For Each ch In IO.Path.GetInvalidFileNameChars()
+            result = result.Replace(ch, "_")
+        Next
+
+        If String.IsNullOrWhiteSpace(result) Then result = original & "_out"
+        Return result
+    End Function
+
     Public Function BuildOutputPath(job As JobVm) As String
         Dim dir As String
         If String.IsNullOrEmpty(_outputDirectory) Then
@@ -1181,7 +1242,7 @@ Public Class MainViewModel
             ext = If(def.Name = "mp4", ".m4a", ".mka")
         End If
 
-        Return IO.Path.Combine(dir, IO.Path.GetFileNameWithoutExtension(job.InputPath) & "_out" & ext)
+        Return IO.Path.Combine(dir, ExpandNameTemplate(job) & ext)
     End Function
 
     ' 输出目录 / 容器 / 媒体模式变化后，刷新所有还没开始的任务

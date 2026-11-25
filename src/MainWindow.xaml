@@ -719,7 +719,7 @@
                                         <TextBlock Text="{Binding Container}" FontSize="9.5" Foreground="#34D399"/>
                                     </Border>
                                 </StackPanel>
-                                <TextBlock Text="D:\Export\{name}.mp4" FontFamily="Consolas" FontSize="10"
+                                <TextBlock Text="D:\Export\{name}" FontFamily="Consolas" FontSize="10"
                                            Foreground="#5D6B82" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Grid>

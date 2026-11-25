@@ -167,6 +167,12 @@ Class MainWindow
             End While
             If anySet Then _vm.Rebuild()
 
+            ' --container <name>：切换输出容器（自动化测试用）
+            Dim contIdx = Array.IndexOf(argv, "--container")
+            If contIdx >= 0 AndAlso contIdx + 1 < argv.Length Then
+                _vm.Container = argv(contIdx + 1)
+            End If
+
             ' 输出目录 / 方案读写（自动化测试用）
             Dim outDirIdx = Array.IndexOf(argv, "--outdir")
             If outDirIdx >= 0 AndAlso outDirIdx + 1 < argv.Length Then

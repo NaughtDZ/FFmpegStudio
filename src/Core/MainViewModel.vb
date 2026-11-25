@@ -456,7 +456,9 @@ Public Class MainViewModel
     Public Property LibraryItems As New ObservableCollection(Of LibraryItemVm)
     Public Property EncoderChoices As New ObservableCollection(Of String)
     Public Property AudioEncoderChoices As New ObservableCollection(Of String)
-    Public Property ContainerChoices As New ObservableCollection(Of String) From {"mp4", "mkv", "mov", "webm"}
+    Public Property ContainerChoices As New ObservableCollection(Of String)()
+
+    Private ReadOnly _allAudioEncoders As New List(Of String)()
 
     Private _videoEncoder As String = "libx264"
     Private _audioEncoder As String = "aac"
@@ -489,12 +491,44 @@ Public Class MainViewModel
             Return _container
         End Get
         Set(value As String)
-            If SetField(_container, value, NameOf(Container)) Then
-                Raise(NameOf(OutputDirectoryDisplay))
-                RecalculateOutputs()
+            If Not SetField(_container, value, NameOf(Container)) Then Return
+
+            ' 选了音频容器（mp3/flac/wav…）就自动关掉视频流——里面装不下视频
+            Dim def = Containers.Find(value)
+            If def IsNot Nothing AndAlso def.IsAudioOnly AndAlso _includesVideo Then
+                _includesVideo = False
+                Raise(NameOf(IncludesVideo))
+                For Each j In Jobs
+                    If j.Status = JobStatus.Pending Then j.IncludesVideo = False
+                Next
             End If
+
+            RefreshAudioEncoders()
+            Raise(NameOf(OutputDirectoryDisplay))
+            RecalculateOutputs()
         End Set
     End Property
+
+    ' 容器换了之后，音频编码器下拉要跟着收窄（mp3 只认 libmp3lame，flac 只认 flac…）
+    Private Sub RefreshAudioEncoders()
+        Dim previous = _audioEncoder
+        AudioEncoderChoices.Clear()
+
+        Dim def = Containers.Find(_container)
+        Dim allowed = If(def IsNot Nothing AndAlso def.AllowedAudioCodecs.Length > 0, def.AllowedAudioCodecs, Nothing)
+
+        If allowed Is Nothing AndAlso _allAudioEncoders.Contains("copy") Then AudioEncoderChoices.Add("copy")
+
+        For Each n In _allAudioEncoders
+            If n = "copy" Then Continue For
+            If allowed Is Nothing OrElse allowed.Contains(n) Then AudioEncoderChoices.Add(n)
+        Next
+
+        If Not AudioEncoderChoices.Contains(previous) Then
+            _audioEncoder = If(AudioEncoderChoices.Count > 0, AudioEncoderChoices(0), "")
+            Raise(NameOf(AudioEncoder))
+        End If
+    End Sub
 
     ''' <summary>输出是否包含视频流。</summary>
     Public Property IncludesVideo As Boolean
@@ -614,6 +648,12 @@ Public Class MainViewModel
     End Sub
 
     Private Sub BuildEncoderChoices()
+        ' 容器：全部列出（音频容器在选中时会自动关掉视频流）
+        ContainerChoices.Clear()
+        For Each c In Containers.All
+            ContainerChoices.Add(c.Name)
+        Next
+
         ' 视频
         Dim vPreferred = New String() {"copy", "libx264", "libx265", "h264_nvenc", "hevc_nvenc",
                                        "h264_qsv", "hevc_qsv", "libsvtav1", "libvpx-vp9", "mpeg4"}
@@ -630,21 +670,24 @@ Public Class MainViewModel
             EncoderChoices.Add(n)
         Next
 
-        ' 音频
+        ' 音频：先收集「全部」，再由 RefreshAudioEncoders 按当前容器过滤到下拉框
         Dim aPreferred = New String() {"copy", "aac", "libmp3lame", "libopus", "libvorbis",
-                                       "flac", "pcm_s16le", "ac3", "libfdk_aac"}
+                                       "flac", "pcm_s16le", "pcm_s24le", "ac3", "wmav2", "alac", "libfdk_aac"}
         Dim aExisting = New HashSet(Of String)(Capabilities.EncodersOfKind("A").Select(Function(e) e.Name))
 
+        _allAudioEncoders.Clear()
         For Each n In aPreferred
             If n = "copy" Then
-                AudioEncoderChoices.Add(n)
+                _allAudioEncoders.Add(n)
             ElseIf aExisting.Contains(n) Then
-                AudioEncoderChoices.Add(n)
+                _allAudioEncoders.Add(n)
             End If
         Next
         For Each n In aExisting.Except(aPreferred).OrderBy(Function(x) x)
-            AudioEncoderChoices.Add(n)
+            _allAudioEncoders.Add(n)
         Next
+
+        RefreshAudioEncoders()
     End Sub
 
     Public Function BuildContext(video As Boolean, audio As Boolean) As EvalContext
@@ -1101,12 +1144,18 @@ Public Class MainViewModel
             dir = _outputDirectory
         End If
 
-        ' 纯音频输出用音频容器扩展名，避免 mp4 里只有一个音轨的怪异产物
+        ' 扩展名跟着容器走：
+        '   音频容器（mp3/flac/wav…）  → 用它自己的扩展名
+        '   视频容器 + 有视频          → 用它的扩展名
+        '   视频容器 + 只有音频        → m4a / mka 兜底（避免 mp4 里只有一条音轨）
+        Dim def = Containers.Find(Container)
         Dim ext As String
-        If job.IncludesVideo Then
-            ext = "." & Container
+        If def Is Nothing Then
+            ext = ".mp4"
+        ElseIf def.IsAudioOnly OrElse job.IncludesVideo Then
+            ext = def.Extension
         Else
-            ext = If(Container = "mp4", ".m4a", ".mka")
+            ext = If(def.Name = "mp4", ".m4a", ".mka")
         End If
 
         Return IO.Path.Combine(dir, IO.Path.GetFileNameWithoutExtension(job.InputPath) & "_out" & ext)

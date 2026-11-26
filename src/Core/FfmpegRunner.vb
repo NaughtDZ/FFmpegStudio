@@ -14,11 +14,22 @@ Public Class MediaInfo
     Public Property Height As Integer
     Public Property Fps As Double
     Public Property VideoCodec As String = ""
+
+    ' 色彩传递特性：smpte2084(PQ) / arib-std-b67(HLG) 表示 HDR
+    Public Property ColorTransfer As String = ""
     Public Property AudioCodec As String = ""
 
     ' 逐条流的明细：用来支持「只保留第 1、3 条音轨」这种挑选
     Public Property AudioTracks As New List(Of TrackInfo)()
     Public Property VideoTracks As New List(Of TrackInfo)()
+
+    ''' <summary>是不是 HDR 素材（PQ 或 HLG）。</summary>
+    Public ReadOnly Property IsHdr As Boolean
+        Get
+            Dim t = If(ColorTransfer, "").ToLowerInvariant()
+            Return t = "smpte2084" OrElse t = "arib-std-b67"
+        End Get
+    End Property
 
     Public ReadOnly Property DurationText As String
         Get
@@ -66,7 +77,7 @@ Public Module MediaProbe
         Dim info As New MediaInfo With {.Path = path}
         If Not File.Exists(path) Then Return info
 
-        Dim args = $"-v error -show_entries format=duration:stream=codec_type,codec_name,width,height,r_frame_rate -of json ""{path}"""
+        Dim args = $"-v error -show_format -show_streams -of json ""{path}"""
 
         Dim psi As New ProcessStartInfo(ffprobePath, args) With {
             .RedirectStandardOutput = True,
@@ -121,6 +132,10 @@ Public Module MediaProbe
                                 Case "video"
                                     info.HasVideo = True
                                     info.VideoTracks.Add(track)
+                                    Dim ctEl As JsonElement
+                                    If st.TryGetProperty("color_transfer", ctEl) Then
+                                        info.ColorTransfer = If(ctEl.GetString(), "")
+                                    End If
                                     Dim w, h As JsonElement
                                     If st.TryGetProperty("width", w) Then info.Width = w.GetInt32()
                                     If st.TryGetProperty("height", h) Then info.Height = h.GetInt32()

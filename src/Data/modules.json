@@ -1701,7 +1701,7 @@
       "subtitle": "-map · 保留哪些流",
       "icon": "layers",
       "level": "advanced",
-      "doc": "默认只保留第一条视频和第一条音频。多语言视频、带字幕的素材可以选「全部音轨」，也可以选「指定音轨」后填序号（从 0 开始，逗号分隔，如 0,2）只挑其中几条。",
+      "doc": "默认只保留第一条视频和第一条音频。多语言视频、带字幕的素材可以选「全部音轨」，也可以按序号（0,2）或按语言代码（jpn,eng）只挑其中几条。",
       "controls": [
         {
           "key": "mode",
@@ -1722,6 +1722,10 @@
               "label": "指定音轨（填序号）"
             },
             {
+              "value": "lang",
+              "label": "按语言挑选"
+            },
+            {
               "value": "all",
               "label": "全部流（含字幕）"
             }
@@ -1732,6 +1736,12 @@
           "type": "string",
           "label": "音轨序号",
           "default": "0"
+        },
+        {
+          "key": "langs",
+          "type": "string",
+          "label": "语言代码",
+          "default": "jpn,eng"
         }
       ],
       "summary": "{mode}",
@@ -1786,6 +1796,27 @@
               "0:a:{item}"
             ]
           }
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "lang"
+          },
+          "emit": [
+            "-map",
+            "0:v:0?"
+          ],
+          "emitRepeat": {
+            "key": "langs",
+            "tokens": [
+              "-map",
+              "0:a:m:language:{item}"
+            ]
+          }
         }
       ]
     },
@@ -1797,7 +1828,7 @@
       "subtitle": "先分析再编码 · 码率更准",
       "icon": "gauge",
       "level": "advanced",
-      "doc": "先完整分析一遍素材，再正式编码。同样的目标码率下画质分配更均匀，代价是耗时约两倍。必须搭配「目标码率」模块——x264 在 CRF 模式下会直接报 CRF/CQP is incompatible with 2pass。",
+      "doc": "先完整分析一遍素材，再正式编码。同样的目标码率下画质分配更均匀，代价是耗时约两倍。必须搭配「目标码率」模块——CRF 模式下 x264 会直接报 CRF/CQP is incompatible with 2pass。支持 x264 / x265 / VP9 / AV1 / MPEG-4。",
       "controls": [
         {
           "key": "on",
@@ -1825,7 +1856,12 @@
           "when": {
             "encoder": [
               "libx264",
-              "libx265"
+              "libx265",
+              "libvpx-vp9",
+              "libsvtav1",
+              "mpeg4",
+              "mpeg2video",
+              "libvpx"
             ]
           },
           "runIf": {
@@ -2286,6 +2322,65 @@
             "artist={artist}",
             "-metadata",
             "comment={comment}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video.tonemap",
+      "scope": "video",
+      "category": "画面",
+      "title": "HDR 转 SDR",
+      "subtitle": "libplacebo · 高动态范围压到标准范围",
+      "icon": "palette",
+      "kind": "filter",
+      "level": "advanced",
+      "order": 12,
+      "requiresHdr": true,
+      "doc": "把 HDR（PQ / HLG）画面压到 SDR 范围内。不处理的话 HDR 视频在普通显示器上会一片灰白、对比度全失。用 libplacebo 滤镜实现——这个 ffmpeg build 的 zscale 色彩转换不可用（会报 no path between colorspaces），libplacebo 是实测可用的替代。",
+      "controls": [
+        {
+          "key": "algo",
+          "type": "enum",
+          "label": "算法",
+          "default": "hable",
+          "options": [
+            {
+              "value": "hable",
+              "label": "Hable · 细节最足（慢）"
+            },
+            {
+              "value": "mobius",
+              "label": "Mobius · 保留亮部"
+            },
+            {
+              "value": "reinhard",
+              "label": "Reinhard · 柔和"
+            },
+            {
+              "value": "clip",
+              "label": "Clip · 最快但会切高光"
+            },
+            {
+              "value": "linear",
+              "label": "Linear · 不做映射"
+            }
+          ]
+        }
+      ],
+      "summary": "{algo}",
+      "excludeEncoders": [
+        "copy"
+      ],
+      "bindings": [
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "emit": [
+            "libplacebo=tonemapping={algo}:colorspace=bt709:color_primaries=bt709:color_trc=bt709,format=yuv420p"
           ]
         }
       ]

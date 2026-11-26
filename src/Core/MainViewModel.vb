@@ -736,6 +736,9 @@ Public Class MainViewModel
         all.AddRange(VideoInstances)
         all.AddRange(AudioInstances)
 
+        Dim job = _activeJob
+        Dim isHdr = job IsNot Nothing AndAlso job.Media IsNot Nothing AndAlso job.Media.IsHdr
+
         Return New EvalContext With {
             .Capabilities = Capabilities,
             .VideoEncoder = VideoEncoder,
@@ -743,6 +746,7 @@ Public Class MainViewModel
             .ContainerName = Container,
             .IncludesVideo = video,
             .IncludesAudio = audio,
+            .IsHdr = isHdr,
             .Instances = all
         }
     End Function

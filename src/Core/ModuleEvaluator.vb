@@ -57,7 +57,10 @@ Public Class EvalContext
     ''' <summary>输出是否包含视频流。</summary>
     Public Property IncludesVideo As Boolean = True
     ''' <summary>输出是否包含音频流。</summary>
-    Public Property IncludesAudio As Boolean = True
+    Public Property IncludesAudio As Boolean
+
+    ' 当前素材是不是 HDR（决定色调映射等模块是否可用）
+    Public Property IsHdr As Boolean = True
 
     Public Property Instances As New List(Of ModuleInstance)()
 
@@ -167,6 +170,13 @@ Public Class ModuleEvaluator
                 result.State = ModuleState.Hidden
                 result.Reason = $"当前编码器 {encName} 不支持此参数"
             End If
+            Return result
+        End If
+
+        ' HDR 专用模块：没有 HDR 素材时标为条件可用（让用户知道功能存在，但不让他误开）
+        If def.RequiresHdr AndAlso Not ctx.IsHdr Then
+            result.State = ModuleState.Conditional
+            result.Reason = "需要 HDR 素材"
             Return result
         End If
 

@@ -79,6 +79,9 @@ Public Class ModuleDefinition
     Public Property Conflicts As New List(Of String)()
     ' 必须先有这些模块在场，本模块才有意义（如两遍编码需要目标码率）
     Public Property Requires As New List(Of String)()
+
+    ' 只对 HDR 素材有意义（如色调映射），SDR 素材下整个模块隐藏
+    Public Property RequiresHdr As Boolean
     ''' <summary>这些编码器下整个模块不可用（如 copy 模式）。</summary>
     Public Property ExcludeEncoders As New List(Of String)()
 

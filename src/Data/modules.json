@@ -261,8 +261,24 @@
       "icon": "scale",
       "kind": "filter",
       "level": "basic",
-      "doc": "把画面缩放到指定分辨率。lanczos 质量最好但最慢，bilinear 最快。缩放必须解码重编码，所以 copy 模式下不可用。",
+      "doc": "把画面缩放到指定分辨率，或按倍数缩放。lanczos 质量最好（慢），bilinear 最快。选「按比例缩放」时下面的宽、高会被忽略，只用「缩放倍数」；宽度高度会自动取偶数——yuv420p 要求宽高是偶数，奇数会直接编码失败。",
       "controls": [
+        {
+          "key": "mode",
+          "type": "enum",
+          "label": "方式",
+          "default": "fixed",
+          "options": [
+            {
+              "value": "fixed",
+              "label": "固定分辨率"
+            },
+            {
+              "value": "factor",
+              "label": "按比例缩放"
+            }
+          ]
+        },
         {
           "key": "width",
           "type": "int",
@@ -280,6 +296,14 @@
           "default": "1080"
         },
         {
+          "key": "factor",
+          "type": "float",
+          "label": "缩放倍数",
+          "min": 0.1,
+          "max": 16,
+          "default": "0.5"
+        },
+        {
           "key": "flags",
           "type": "enum",
           "label": "重采样",
@@ -291,7 +315,7 @@
             },
             {
               "value": "bicubic",
-              "label": "bicubic · 均衡"
+              "label": "bicubic · 平衡"
             },
             {
               "value": "bilinear",
@@ -300,7 +324,7 @@
           ]
         }
       ],
-      "summary": "→ {width}×{height}",
+      "summary": "固定 {width}×{height}",
       "excludeEncoders": [
         "copy"
       ],
@@ -311,9 +335,26 @@
               "*"
             ]
           },
+          "runIf": {
+            "mode": "fixed"
+          },
           "emit": [
             "scale={width}:{height}:flags={flags}"
           ]
+        },
+        {
+          "when": {
+            "encoder": [
+              "*"
+            ]
+          },
+          "runIf": {
+            "mode": "factor"
+          },
+          "emit": [
+            "scale=trunc(iw*{factor}/2)*2:trunc(ih*{factor}/2)*2:flags={flags}"
+          ],
+          "summaryOverride": "{factor}x"
         }
       ],
       "order": 40

@@ -394,8 +394,9 @@ Public Class ModuleEvaluator
         If s Is Nothing Then Return """"""
         ' 以 - 开头的是 flag，永远不加引号（-c:v 里含冒号，否则会被包起来）
         If s.StartsWith("-") AndAlso s.Length > 1 Then Return s
-        ' 只有空格和逗号会让命令行解析出错；冒号、等号在 shell 里是普通字符
-        If s.Contains(" ") OrElse s.Contains(",") OrElse s.Contains("""") Then
+        ' 会让命令行解析出错的字符：空格、逗号、括号（cmd/PowerShell 里 () 是特殊字符）
+        ' 冒号、等号在 shell 里是普通字符，不必加引号
+        If s.Contains(" ") OrElse s.Contains(",") OrElse s.Contains("(") OrElse s.Contains(")") OrElse s.Contains("""") Then
             Return """" & s & """"
         End If
         Return s

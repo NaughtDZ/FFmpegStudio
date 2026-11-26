@@ -47,11 +47,20 @@ pwsh -NoProfile -File .\build.ps1 -Publish
 >
 > **「下载回来实跑」这一步抓到了它**——否则发给用户的就是过期构建。
 
-publish 后必须核对：
+publish 后必须核对两件事，**缺一不可**：
 
 ```powershell
-(Get-Item "dist\FfmpegStudio.exe").VersionInfo.FileVersion   # 应该是刚才设的版本
+# ① 版本号对不对
+(Get-Item "dist\FfmpegStudio.exe").VersionInfo.FileVersion
+
+# ② 新功能真的在里面（只看版本号不够——版本号改了但代码没进去的情况真发生过）
+dist\FfmpegStudio.exe --no-hwprobe --add test.mp4 \
+    --set video.scale mode factor --set video.scale factor 0.5 --command-out c.txt
+# 检查 c.txt 里有没有新功能的痕迹（如 trunc(iw*0.5)）
 ```
+
+> ② 是后补的：V0.3.1 发布前发现 dist 停留在 11:46 的构建，而按比例缩放的代码是 11:57 才写的。
+> 光看版本号是 0.3.0（没变），但功能确实缺了。用真实命令跑一次才确定。
 
 ---
 

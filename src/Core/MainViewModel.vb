@@ -117,6 +117,34 @@ Public Class LibraryItemVm
         End Get
     End Property
 
+    ' 模块库分组：视频参数 / 音频参数 / 输出
+    Public ReadOnly Property GroupName As String
+        Get
+            Select Case If(Definition.Scope, "").ToLowerInvariant()
+                Case "audio"
+                    Return "音频参数"
+                Case "container"
+                    Return "输出"
+                Case Else
+                    Return "视频参数"
+            End Select
+        End Get
+    End Property
+
+    ' 组的显示顺序：0 视频 / 1 音频 / 2 输出
+    Public ReadOnly Property GroupOrder As Integer
+        Get
+            Select Case If(Definition.Scope, "").ToLowerInvariant()
+                Case "audio"
+                    Return 1
+                Case "container"
+                    Return 2
+                Case Else
+                    Return 0
+            End Select
+        End Get
+    End Property
+
     Public ReadOnly Property State As ModuleState
         Get
             Return Evaluation.State
@@ -454,6 +482,18 @@ Public Class MainViewModel
     Public Property VideoChain As New ObservableCollection(Of ModuleCardVm)
     Public Property AudioChain As New ObservableCollection(Of ModuleCardVm)
     Public Property LibraryItems As New ObservableCollection(Of LibraryItemVm)
+
+    ' 模块库按 视频参数 / 音频参数 / 输出 分组显示
+    Public ReadOnly Property LibraryView As System.ComponentModel.ICollectionView
+
+    Public Sub New()
+        Dim view = System.Windows.Data.CollectionViewSource.GetDefaultView(LibraryItems)
+        view.SortDescriptions.Add(New System.ComponentModel.SortDescription(
+            NameOf(LibraryItemVm.GroupOrder), System.ComponentModel.ListSortDirection.Ascending))
+        view.GroupDescriptions.Add(New System.Windows.Data.PropertyGroupDescription(NameOf(LibraryItemVm.GroupName)))
+        LibraryView = view
+    End Sub
+
     Public Property EncoderChoices As New ObservableCollection(Of String)
     Public Property AudioEncoderChoices As New ObservableCollection(Of String)
     Public Property ContainerChoices As New ObservableCollection(Of String)()

@@ -766,7 +766,26 @@
                         </Border>
 
                         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="12,0,12,12">
-                            <ItemsControl ItemsSource="{Binding LibraryItems}" ItemTemplate="{StaticResource LibTemplate}"/>
+                            <ItemsControl ItemsSource="{Binding LibraryView}" ItemTemplate="{StaticResource LibTemplate}">
+                                <ItemsControl.GroupStyle>
+                                    <GroupStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="0,10,0,6">
+                                                    <Border Height="1" Background="#1D2431" Margin="0,0,0,7"/>
+                                                    <DockPanel>
+                                                        <TextBlock Text="{Binding Name}" FontSize="10.5"
+                                                                   FontWeight="SemiBold" Foreground="#6E7F99"/>
+                                                        <TextBlock Text="{Binding ItemCount}" DockPanel.Dock="Right"
+                                                                   HorizontalAlignment="Right" FontSize="10"
+                                                                   FontFamily="Consolas" Foreground="#3E4A5E"/>
+                                                    </DockPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                    </GroupStyle>
+                                </ItemsControl.GroupStyle>
+                            </ItemsControl>
                         </ScrollViewer>
                     </Grid>
 
